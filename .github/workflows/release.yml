@@ -65,10 +65,10 @@ jobs:
       - name: Create dmg
         run: |
           CAPITALIZED_PROJECT_NAME=$(echo ${{ env.PROJECT_NAME }} | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
-          
+
           brew install graphicsmagick imagemagick
           npm install --global create-dmg
-          create-dmg 'dist/${CAPITALIZED_PROJECT_NAME}.app' dist
+          create-dmg 'dist/${{ env.PROJECT_NAME }}.app' dist
           mv "$(find ./dist -type file -name '*.dmg')" "./dist/${CAPITALIZED_PROJECT_NAME}-Universal.dmg"
 
       - name: Notarize app
