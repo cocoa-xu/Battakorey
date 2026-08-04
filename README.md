@@ -67,8 +67,23 @@ reference while researching battery telemetry exposed by macOS.
 
 ## Development
 
-The test suite uses mocked IORegistry, power-source, adapter, SMC, and IOReport payloads. It can run on CI machines without a battery:
+Install XcodeGen and generate the Xcode project before building:
 
 ```sh
+brew install xcodegen
+./scripts/generate-project.sh
+```
+
+For a stable local code signature, copy `.battakorey-signing.example` to
+`.battakorey-signing.local` and select a team and signing identity available in
+your login keychain. The local file and generated Xcode project are ignored by
+Git. Explicit `DEVELOPMENT_TEAM` and `CODE_SIGN_IDENTITY` environment variables
+take precedence, allowing CI to inject signing credentials.
+
+The test suite uses mocked IORegistry, power-source, adapter, SMC, and IOReport
+payloads. It can run on CI machines without a battery:
+
+```sh
+./scripts/generate-project.sh
 xcodebuild -project battakorey.xcodeproj -scheme battakorey -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO test
 ```

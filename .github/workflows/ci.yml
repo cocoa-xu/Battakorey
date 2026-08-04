@@ -25,6 +25,12 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: ./scripts/generate-project.sh
+
       - name: Run mocked unit tests
         run: |
           xcodebuild \

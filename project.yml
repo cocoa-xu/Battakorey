@@ -1,0 +1,88 @@
+name: battakorey
+
+options:
+  minimumXcodeGenVersion: 2.45.4
+  xcodeVersion: "16.4"
+  projectFormat: xcode16_3
+  defaultConfig: Release
+  deploymentTarget:
+    macOS: "13.0"
+
+packages:
+  FlowingDayUI:
+    url: https://github.com/cocoa-xu/flowing-day-ui
+    exactVersion: 1.1.1
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: "${DEVELOPMENT_TEAM}"
+    SWIFT_VERSION: "5.0"
+
+targets:
+  battakorey:
+    type: application
+    platform: macOS
+    sources:
+      - path: battakorey
+        excludes:
+          - ExportOptions.plist
+          - Info.plist
+    info:
+      path: battakorey/Info.plist
+      properties:
+        CFBundleDisplayName: Battakorey
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        LSApplicationCategoryType: public.app-category.utilities
+        LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
+        LSUIElement: true
+        NSMainStoryboardFile: Main
+        NSPrincipalClass: NSApplication
+    settings:
+      base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_IDENTITY: "${CODE_SIGN_IDENTITY}"
+        CODE_SIGN_STYLE: Manual
+        CURRENT_PROJECT_VERSION: 42
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_HARDENED_RUNTIME: YES
+        MARKETING_VERSION: 2.0.0
+        PRODUCT_BUNDLE_IDENTIFIER: moe.uwucocoa.battakorey
+    dependencies:
+      - package: FlowingDayUI
+        product: FlowingDaySettings
+
+  battakoreyTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - battakoreyTests
+    settings:
+      base:
+        CODE_SIGN_IDENTITY: "${CODE_SIGN_IDENTITY}"
+        CODE_SIGN_STYLE: Manual
+        PRODUCT_BUNDLE_IDENTIFIER: moe.uwucocoa.battakoreyTests
+    dependencies:
+      - target: battakorey
+
+schemes:
+  battakorey:
+    build:
+      targets:
+        battakorey: all
+        battakoreyTests:
+          - test
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - name: battakoreyTests
+          parallelizable: true
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
