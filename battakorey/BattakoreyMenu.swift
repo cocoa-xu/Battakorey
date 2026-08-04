@@ -1,146 +1,176 @@
-//
-//  BattakoreyMenu.swift
-//  battakorey
-//
-//  Created by Cocoa on 08/07/2021.
-//
-
-import Foundation
 import Cocoa
 
-class BattakoreyMenu: NSMenu {
-    var info: NSDictionary? {
-        didSet {
-            if self.items.count == 0 {
-                for _ in 0...6 {
-                    let i = NSMenuItem.init()
-                    i.view = BattakoreyMenuItem.init(frame: NSMakeRect(0, 0, 200, 25))
-                    self.addItem(i)
-                }
-                
-                let i = NSMenuItem.separator()
-                self.addItem(i)
-                
-                let quitItem = NSMenuItem.init()
-                quitItem.title = "Quit"
-                quitItem.target = self
-                quitItem.action = #selector(quit)
-                quitItem.keyEquivalent = "q"
-                self.addItem(quitItem)
-            }
+final class BattakoreyMenu: NSMenu {
+    private let presenter = BatteryMenuPresenter()
+    private var layout: [String] = []
+    private var rowViews: [BattakoreyMenuItem] = []
 
-            var view = self.items[0].view as! BattakoreyMenuItem
-            view.update("Battery", String.init(format: "%d%%", self.info?["CurrentCapacity"] as! Int))
-            
-            view = self.items[1].view as! BattakoreyMenuItem
-            view.update("Capacity", String.init(format: "%d mAH", self.info?["AppleRawCurrentCapacity"] as! Int))
-            
-            view = self.items[2].view as! BattakoreyMenuItem
-            view.update("Max Capacity", String.init(format: "%d mAH", self.info?["AppleRawMaxCapacity"] as! Int))
-            
-            view = self.items[3].view as! BattakoreyMenuItem
-            view.update("Cycles", String.init(format: "%d", self.info?["CycleCount"] as! Int))
-        
-            
-            view = self.items[4].view as! BattakoreyMenuItem
-            view.update("Temperature", String.init(format: "%.2f °C", (self.info?["Temperature"] as! Float) / 100))
-            
-            let charging = self.info?["IsCharging"] as! Bool
-            view = self.items[5].view as! BattakoreyMenuItem
-            view.update("Is charging", charging ? "YES" : "NO")
-            
-            var remainingMinutes = self.info?["TimeRemaining"] as! Float
-            view = self.items[6].view as! BattakoreyMenuItem
-            if remainingMinutes < 65535 {
-                let remainingHours = Int(remainingMinutes / 60)
-                remainingMinutes -= Float(remainingHours * 60)
-                view.update(String.init(format: "Time to %@", charging ? "full" : "empty"), String.init(format: "%d h %.0f m", remainingHours, remainingMinutes))
-            } else {
-                view.update(String.init(format: "Time to %@", charging ? "full" : "empty"), "Calculating...")
+    func update(with battery: BatterySnapshot) {
+        let sections = presenter.sections(for: battery)
+        let detailSections = presenter.detailSections(for: battery)
+        let newLayout = layout(for: sections, prefix: "main")
+            + layout(for: detailSections, prefix: "details")
+        let rows = sections.flatMap(\.rows) + detailSections.flatMap(\.rows)
+
+        if layout == newLayout, rowViews.count == rows.count {
+            for (view, row) in zip(rowViews, rows) {
+                view.update(title: row.title, value: row.value)
+            }
+            return
+        }
+
+        rebuild(with: sections, detailSections: detailSections)
+        layout = newLayout
+    }
+
+    private func rebuild(
+        with sections: [BatteryMenuSection],
+        detailSections: [BatteryMenuSection]
+    ) {
+        removeAllItems()
+        rowViews.removeAll()
+
+        populate(sections, in: self)
+        if !detailSections.isEmpty {
+            addItem(.separator())
+            let detailsItem = NSMenuItem(title: "Battery Internals", action: nil, keyEquivalent: "")
+            let detailsMenu = NSMenu(title: "Battery Internals")
+            populate(detailSections, in: detailsMenu)
+            detailsItem.submenu = detailsMenu
+            addItem(detailsItem)
+        }
+
+        addItem(.separator())
+        let quitItem = NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q")
+        quitItem.target = self
+        addItem(quitItem)
+    }
+
+    private func populate(_ sections: [BatteryMenuSection], in menu: NSMenu) {
+        for (index, section) in sections.enumerated() {
+            if index > 0 {
+                menu.addItem(.separator())
+            }
+            if let title = section.title {
+                let header = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+                header.isEnabled = false
+                menu.addItem(header)
+            }
+            for row in section.rows {
+                let item = NSMenuItem()
+                let view = BattakoreyMenuItem(frame: NSRect(x: 0, y: 0, width: 340, height: 23))
+                view.update(title: row.title, value: row.value)
+                item.view = view
+                menu.addItem(item)
+                rowViews.append(view)
             }
         }
     }
-    
-    @objc func quit() {
+
+    private func layout(for sections: [BatteryMenuSection], prefix: String) -> [String] {
+        sections.flatMap { section in
+            ["\(prefix):\(section.title ?? "")"] + section.rows.map { "\(prefix):\($0.title)" }
+        }
+    }
+
+    @objc private func quit() {
         NSApp.terminate(nil)
     }
 }
 
-class BattakoreyMenuItem: NSView {
-    var titleLabel: NSTextField
-    var detailLabel: NSTextField
-    
-    let rightAlignment: NSParagraphStyle = {
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.alignment = .right
-        paragraphStyle.baseWritingDirection = .natural
-        return paragraphStyle
-    }()
-    
-    required init?(coder: NSCoder) {
-        self.titleLabel = NSTextField.init()
-        self.detailLabel = NSTextField.init()
-        super.init(coder: coder)
-    }
-    
+final class BattakoreyMenuItem: NSView {
+    private let titleLabel: NSTextField
+    private let detailLabel: NSTextField
+
     override init(frame frameRect: NSRect) {
-        let margin: CGFloat = 10
-        self.titleLabel = NSTextField.init(frame: NSMakeRect(margin, 0, frameRect.width / 2 - margin, frameRect.height))
-        self.detailLabel = NSTextField.init(frame: NSMakeRect(frameRect.width / 2, 0, frameRect.width / 2 - margin, frameRect.height))
-        self.titleLabel.cell = BattakoreyTextFieldCell()
-        self.titleLabel.isBezeled = false
-        self.titleLabel.backgroundColor = NSColor.clear
-        self.titleLabel.isEditable = false
-        self.titleLabel.isSelectable = false
-        
-        self.detailLabel.cell = BattakoreyTextFieldCell()
-        self.detailLabel.isBezeled = false
-        self.detailLabel.backgroundColor = NSColor.clear
-        self.detailLabel.isEditable = false
-        self.detailLabel.isSelectable = false
-        
+        let margin: CGFloat = 12
+        let titleWidth = frameRect.width * 0.42
+        titleLabel = NSTextField(frame: NSRect(
+            x: margin,
+            y: 0,
+            width: titleWidth - margin,
+            height: frameRect.height
+        ))
+        detailLabel = NSTextField(frame: NSRect(
+            x: titleWidth,
+            y: 0,
+            width: frameRect.width - titleWidth - margin,
+            height: frameRect.height
+        ))
         super.init(frame: frameRect)
-        self.addSubview(self.titleLabel)
-        self.addSubview(self.detailLabel)
+
+        configure(titleLabel)
+        configure(detailLabel)
+        detailLabel.alignment = .right
+        addSubview(titleLabel)
+        addSubview(detailLabel)
     }
-    
-    func update(_ title: String, _ value: String) {
-        var r = NSMutableAttributedString.init(string: title)
-        r.addAttribute(.foregroundColor, value: NSColor.black, range: NSMakeRange(0, title.count))
-        self.titleLabel.attributedStringValue = r
-        
-        r = NSMutableAttributedString.init(string: value)
-        r.addAttribute(.foregroundColor, value: NSColor.gray, range: NSMakeRange(0, value.count))
-        r.addAttribute(.paragraphStyle, value: rightAlignment, range: NSMakeRange(0, value.count))
-        self.detailLabel.attributedStringValue = r
+
+    required init?(coder: NSCoder) {
+        nil
+    }
+
+    func update(title: String, value: String) {
+        titleLabel.stringValue = title
+        titleLabel.textColor = .labelColor
+        detailLabel.stringValue = value
+        detailLabel.textColor = .secondaryLabelColor
+    }
+
+    private func configure(_ label: NSTextField) {
+        label.cell = BattakoreyTextFieldCell()
+        label.isBezeled = false
+        label.drawsBackground = false
+        label.isEditable = false
+        label.isSelectable = false
+        label.lineBreakMode = .byTruncatingTail
     }
 }
 
-class BattakoreyTextFieldCell: NSTextFieldCell {
-    func adjustedFrame(toVerticallyCenterText rect: NSRect) -> NSRect {
-        // super would normally draw text at the top of the cell
+final class BattakoreyTextFieldCell: NSTextFieldCell {
+    private func verticallyCenteredFrame(_ rect: NSRect) -> NSRect {
         var titleRect = super.titleRect(forBounds: rect)
-        
-        let minimumHeight = self.cellSize(forBounds: rect).height
+        let minimumHeight = cellSize(forBounds: rect).height
         titleRect.origin.y += (titleRect.height - minimumHeight) / 2
         titleRect.size.height = minimumHeight
-
         return titleRect
     }
 
-    override func edit(withFrame rect: NSRect, in controlView: NSView, editor textObj: NSText, delegate: Any?, event: NSEvent?) {
-        super.edit(withFrame: adjustedFrame(toVerticallyCenterText: rect), in: controlView, editor: textObj, delegate: delegate, event: event)
+    override func edit(
+        withFrame rect: NSRect,
+        in controlView: NSView,
+        editor textObject: NSText,
+        delegate: Any?,
+        event: NSEvent?
+    ) {
+        super.edit(
+            withFrame: verticallyCenteredFrame(rect),
+            in: controlView,
+            editor: textObject,
+            delegate: delegate,
+            event: event
+        )
     }
 
-    override func select(withFrame rect: NSRect, in controlView: NSView, editor textObj: NSText, delegate: Any?, start selStart: Int, length selLength: Int) {
-        super.select(withFrame: adjustedFrame(toVerticallyCenterText: rect), in: controlView, editor: textObj, delegate: delegate, start: selStart, length: selLength)
+    override func select(
+        withFrame rect: NSRect,
+        in controlView: NSView,
+        editor textObject: NSText,
+        delegate: Any?,
+        start selectionStart: Int,
+        length selectionLength: Int
+    ) {
+        super.select(
+            withFrame: verticallyCenteredFrame(rect),
+            in: controlView,
+            editor: textObject,
+            delegate: delegate,
+            start: selectionStart,
+            length: selectionLength
+        )
     }
 
     override func drawInterior(withFrame cellFrame: NSRect, in controlView: NSView) {
-        super.drawInterior(withFrame: adjustedFrame(toVerticallyCenterText: cellFrame), in: controlView)
-    }
-
-    override func draw(withFrame cellFrame: NSRect, in controlView: NSView) {
-        super.draw(withFrame: cellFrame, in: controlView)
+        super.drawInterior(withFrame: verticallyCenteredFrame(cellFrame), in: controlView)
     }
 }

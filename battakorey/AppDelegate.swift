@@ -1,46 +1,49 @@
-//
-//  AppDelegate.swift
-//  battakorey
-//
-//  Created by Cocoa on 06/07/2021.
-//
-
 import Cocoa
 
-
 @main
-class AppDelegate: NSObject, NSApplicationDelegate {
-    var statusBarItem: NSStatusItem!
-    var battakoery: BattakoreyImage
-    var updateTimer: Timer?
-    var menu: BattakoreyMenu
-    
-    required override init() {
-        self.statusBarItem = NSStatusBar.system.statusItem(withLength: BattakoreyImage.baseWidth)
-        self.battakoery = BattakoreyImage.init(frame: NSMakeRect(0, 0, BattakoreyImage.baseWidth, BattakoreyImage.baseHeight))
-        self.menu = BattakoreyMenu.init()
-        self.statusBarItem.menu = self.menu
-        if let button = self.statusBarItem.button {
-            button.addSubview(self.battakoery)
-        }
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    private let statusBarItem: NSStatusItem
+    private let battakorey: BattakoreyImage
+    private let menu: BattakoreyMenu
+    private let batteryProvider: BatteryInfoProviding
+    private var updateTimer: Timer?
+
+    override init() {
+        statusBarItem = NSStatusBar.system.statusItem(withLength: BattakoreyImage.baseWidth)
+        battakorey = BattakoreyImage(frame: NSRect(
+            x: 0,
+            y: 0,
+            width: BattakoreyImage.baseWidth,
+            height: BattakoreyImage.baseHeight
+        ))
+        menu = BattakoreyMenu()
+        batteryProvider = IOKitBatteryInfoProvider()
+        super.init()
+
+        statusBarItem.menu = menu
+        statusBarItem.button?.addSubview(battakorey)
     }
-    
-    func applicationDidFinishLaunching(_ aNotification: Notification) {
-        self.updateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [self] timer in
-            let info = BattakoeryInfo()
-            if info != nil {
-                guard let ret = info?.takeRetainedValue() as NSDictionary? else { return }
-                let current = ret["CurrentCapacity"] as! CGFloat
-                let isCharing = ret["IsCharging"] as! Bool
-                if self.battakoery.percentage != current {
-                    self.battakoery.percentage = current
-                }
-                if self.battakoery.isCharging != isCharing {
-                    self.battakoery.isCharging = isCharing
-                }
-                self.menu.info = ret
-            }
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        updateTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            self?.updateBattery()
         }
-        self.updateTimer?.fire()
+        updateBattery()
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        updateTimer?.invalidate()
+    }
+
+    private func updateBattery() {
+        guard let battery = batteryProvider.snapshot() else { return }
+        let percentage = CGFloat(battery.chargePercentage)
+        if battakorey.percentage != percentage {
+            battakorey.percentage = percentage
+        }
+        if battakorey.isCharging != battery.isCharging {
+            battakorey.isCharging = battery.isCharging
+        }
+        menu.update(with: battery)
     }
 }
