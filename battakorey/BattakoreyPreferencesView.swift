@@ -261,6 +261,7 @@ struct BattakoreyPreferencesRoot: View {
 }
 
 private struct BattakoreyAboutPane: View {
+    @Environment(\.settingsAccent) private var accent
     @Environment(\.settingsTypography) private var typography
     let versionText: String
 
@@ -297,16 +298,20 @@ private struct BattakoreyAboutPane: View {
                 )
             }
 
-            Link(destination: Self.cocoaURL) {
-                HStack(spacing: 4) {
-                    Text("Copyright © 2026 Cocoa")
-                    Image(systemName: "arrow.up.right")
-                        .font(.system(size: 8, weight: .semibold))
+            HStack(spacing: 4) {
+                Text("Copyright © 2026")
+                    .foregroundStyle(SettingsPalette.faint)
+                Link(destination: Self.cocoaURL) {
+                    HStack(spacing: 4) {
+                        Text("Cocoa")
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 8, weight: .semibold))
+                    }
+                    .foregroundStyle(accent.foreground)
                 }
-                .font(typography.body.font)
-                .foregroundStyle(SettingsPalette.faint)
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+            .font(typography.body.font)
             .padding(.leading, 4)
         }
     }
