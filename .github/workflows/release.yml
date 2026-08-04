@@ -23,32 +23,86 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install signing certificates
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Import Developer ID signing certificate
         env:
-          APPLE_DEV_CERTIFICATE_BASE64: ${{ secrets.APPLE_DEV_CERTIFICATE_BASE64 }}
           DEV_ID_APP_CERTIFICATE_BASE64: ${{ secrets.DEV_ID_APP_CERTIFICATE_BASE64 }}
-          APPLE_DEV_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEV_CERTIFICATE_PASSWORD }}
           DEV_ID_APP_CERTIFICATE_PASSWORD: ${{ secrets.DEV_ID_APP_CERTIFICATE_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
         run: |
-          APPLE_DEV_CERTIFICATE_PATH=$RUNNER_TEMP/apple_dev.p12
-          DEV_ID_APP_CERTIFICATE_PATH=$RUNNER_TEMP/dev_id_app.p12
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          set -euo pipefail
 
-          printf '%s' "$APPLE_DEV_CERTIFICATE_BASE64" | base64 --decode -o "$APPLE_DEV_CERTIFICATE_PATH"
-          printf '%s' "$DEV_ID_APP_CERTIFICATE_BASE64" | base64 --decode -o "$DEV_ID_APP_CERTIFICATE_PATH"
+          for variable in \
+            DEV_ID_APP_CERTIFICATE_BASE64 \
+            DEV_ID_APP_CERTIFICATE_PASSWORD \
+            KEYCHAIN_PASSWORD \
+            TEAM_ID
+          do
+            if [[ -z "${!variable}" ]]; then
+              echo "::error::$variable repository secret is not configured."
+              exit 1
+            fi
+          done
 
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          certificate_path="$RUNNER_TEMP/developer-id-application.p12"
+          keychain_path="$RUNNER_TEMP/app-signing.keychain-db"
 
-          security import "$APPLE_DEV_CERTIFICATE_PATH" -P "$APPLE_DEV_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
-          security import "$DEV_ID_APP_CERTIFICATE_PATH" -P "$DEV_ID_APP_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
-          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          printf '%s' "$DEV_ID_APP_CERTIFICATE_BASE64" |
+            base64 --decode -o "$certificate_path"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$keychain_path"
+          security set-keychain-settings -lut 21600 "$keychain_path"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$keychain_path"
+
+          security import "$certificate_path" \
+            -P "$DEV_ID_APP_CERTIFICATE_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12 \
+            -k "$keychain_path"
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -s \
+            -k "$KEYCHAIN_PASSWORD" \
+            "$keychain_path"
+          security list-keychains -d user -s "$keychain_path"
+
+          signing_identity="$(
+            security find-identity -v -p codesigning "$keychain_path" |
+              awk -v team_id="$TEAM_ID" '
+                /Developer ID Application:/ && index($0, "(" team_id ")") {
+                  print $2
+                  exit
+                }
+              '
+          )"
+
+          if [[ -z "$signing_identity" ]]; then
+            echo "::error::No Developer ID Application identity matches TEAM_ID."
+            exit 1
+          fi
+
+          {
+            echo "CODE_SIGN_IDENTITY=$signing_identity"
+            echo "DEVELOPMENT_TEAM=$TEAM_ID"
+          } >> "$GITHUB_ENV"
+
+      - name: Generate Xcode project
+        run: ./scripts/generate-project.sh
 
       - name: Build app
         run: |
+          set -euo pipefail
+
+          EXPORT_OPTIONS_PATH="$RUNNER_TEMP/ExportOptions.plist"
+          cp "${{ env.PROJECT_NAME }}/ExportOptions.plist" "$EXPORT_OPTIONS_PATH"
+          /usr/libexec/PlistBuddy \
+            -c "Add :teamID string $DEVELOPMENT_TEAM" \
+            "$EXPORT_OPTIONS_PATH"
+
           xcodebuild \
             archive \
             -project "${{ env.PROJECT_NAME }}.xcodeproj/" \
@@ -56,13 +110,15 @@ jobs:
             -destination "generic/platform=macOS" \
             -archivePath "dist/${{ env.PROJECT_NAME }}.xcarchive" \
             ONLY_ACTIVE_ARCH=NO \
-            ARCHS="arm64 x86_64"
+            ARCHS="arm64 x86_64" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
+            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM"
           xcodebuild \
             -exportArchive \
             -archivePath "dist/${{ env.PROJECT_NAME }}.xcarchive" \
-            -exportOptionsPlist "${{ env.PROJECT_NAME }}/ExportOptions.plist" \
-            -exportPath dist/ \
-            -allowProvisioningUpdates
+            -exportOptionsPlist "$EXPORT_OPTIONS_PATH" \
+            -exportPath dist/
 
       - name: Create dmg
         run: |
@@ -79,6 +135,15 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
         run: |
+          set -euo pipefail
+
+          for variable in APPLE_ID NOTARY_PASSWORD TEAM_ID; do
+            if [[ -z "${!variable}" ]]; then
+              echo "::error::$variable repository secret is not configured."
+              exit 1
+            fi
+          done
+
           CAPITALIZED_PROJECT_NAME=$(echo ${{ env.PROJECT_NAME }} | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
 
           xcrun notarytool submit \
@@ -87,17 +152,17 @@ jobs:
             --password "$NOTARY_PASSWORD" \
             --wait "./dist/${CAPITALIZED_PROJECT_NAME}-Universal.dmg"
           xcrun stapler staple "./dist/${CAPITALIZED_PROJECT_NAME}-Universal.dmg"
+          xcrun stapler validate "./dist/${CAPITALIZED_PROJECT_NAME}-Universal.dmg"
 
       - name: Upload release
         uses: softprops/action-gh-release@v3
         with:
           files: |
             dist/*.dmg
+          generate_release_notes: true
 
-      - name: Clean up keychain
+      - name: Delete temporary signing files
         if: ${{ always() }}
         run: |
-          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
-          if [ -e "$KEYCHAIN_PATH" ]; then
-            security delete-keychain "$KEYCHAIN_PATH"
-          fi
+          security delete-keychain "$RUNNER_TEMP/app-signing.keychain-db" || true
+          rm -f "$RUNNER_TEMP/developer-id-application.p12"
