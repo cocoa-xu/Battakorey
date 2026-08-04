@@ -17,6 +17,13 @@ enum BatteryMenuItemID: String, CaseIterable, Hashable {
     case current
     case batteryPower
     case systemDraw
+    case cpuPower
+    case gpuPower
+    case anePower
+    case memoryPower
+    case gpuMemoryPower
+    case displayPower
+    case externalDisplayPower
     case adapterRating
     case powerContract
     case liveInput

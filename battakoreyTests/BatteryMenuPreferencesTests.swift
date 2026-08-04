@@ -9,6 +9,7 @@ final class BatteryMenuPreferencesTests: XCTestCase {
         XCTAssertEqual(model.visibility, .recommended)
         XCTAssertTrue(model.isVisible(.batteryLevel))
         XCTAssertFalse(model.isVisible(.cellVoltages))
+        XCTAssertFalse(model.isVisible(.cpuPower))
         XCTAssertTrue(store.values.isEmpty)
     }
 

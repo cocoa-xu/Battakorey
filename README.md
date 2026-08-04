@@ -45,9 +45,11 @@ While in charging, there will be Tako's favourite tentacle beside it!
 
 ## Battery data
 
-Open the menu bar item to see live status, capacity, electrical, adapter, and diagnostic data. The Battery Internals submenu adds per-cell voltage, learned capacity, resistance, daily charge range, gauge relearn state, controller counters, and lifetime extremes when the battery controller exposes them.
+Open the menu bar item to see live status, capacity, electrical, adapter, and diagnostic data. Preferences controls every optional row, while the Battery Internals submenu adds per-cell voltage, learned capacity, resistance, daily charge range, gauge relearn state, controller counters, and lifetime extremes when the battery controller exposes them.
 
-Battakorey combines macOS power-source APIs with read-only `AppleSmartBattery` IORegistry properties. It also reads the `PPBR`, `VD0R`, `ID0R`, and `PDTR` AppleSMC keys for responsive battery and input power measurements. These undocumented values vary by hardware and macOS release, so unavailable or implausible fields are omitted instead of causing the app to fail.
+Battakorey combines macOS power-source APIs with read-only `AppleSmartBattery` IORegistry properties. It also reads the `PPBR`, `VD0R`, `ID0R`, and `PDTR` AppleSMC keys for responsive battery and input power measurements. The optional Component Power section samples CPU, GPU, Neural Engine, memory, and display energy through IOReport.
+
+AppleSMC and IOReport are undocumented interfaces that vary by hardware and macOS release. IOReport is loaded at runtime, and unavailable channels or implausible values are omitted instead of causing the app to fail.
 
 The additional telemetry does not require root access or disabling System Integrity Protection. The app is intentionally not sandboxed, which makes this build unsuitable for Mac App Store distribution.
 
@@ -58,7 +60,7 @@ reference while researching battery telemetry exposed by macOS.
 
 ## Development
 
-The test suite uses mocked IORegistry, power-source, adapter, and SMC payloads. It can run on CI machines without a battery:
+The test suite uses mocked IORegistry, power-source, adapter, SMC, and IOReport payloads. It can run on CI machines without a battery:
 
 ```sh
 xcodebuild -project battakorey.xcodeproj -scheme battakorey -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO test

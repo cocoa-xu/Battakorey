@@ -63,6 +63,15 @@ enum MockBatteryData {
                 inputVolts: nil,
                 inputAmps: nil,
                 inputWatts: nil
+            ),
+            ioReportPower: IOReportPowerReading(
+                cpuWatts: 4.25,
+                gpuWatts: 1.5,
+                aneWatts: 0,
+                memoryWatts: 0.85,
+                gpuMemoryWatts: 0.12,
+                displayWatts: 0.7,
+                externalDisplayWatts: 1.1
             )
         )
     }

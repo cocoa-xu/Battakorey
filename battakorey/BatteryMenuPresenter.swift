@@ -22,6 +22,11 @@ struct BatteryMenuPresenter {
             BatteryMenuSection(title: "Electrical", rows: electricalRows(for: battery))
         ]
 
+        let componentPowerRows = componentPowerRows(for: battery)
+        if !componentPowerRows.isEmpty {
+            sections.append(BatteryMenuSection(title: "Component Power", rows: componentPowerRows))
+        }
+
         let adapterRows = adapterRows(for: battery)
         if !adapterRows.isEmpty {
             sections.append(BatteryMenuSection(title: "Power Adapter", rows: adapterRows))
@@ -199,6 +204,24 @@ struct BatteryMenuPresenter {
                 value: String(format: "%.2f V × %.2f A", voltage, current)
             ))
         }
+        return rows
+    }
+
+    private func componentPowerRows(for battery: BatterySnapshot) -> [BatteryMenuRow] {
+        guard let power = battery.ioReportPower else { return [] }
+        var rows: [BatteryMenuRow] = []
+        appendPower(power.cpuWatts, id: .cpuPower, title: "CPU", to: &rows)
+        appendPower(power.gpuWatts, id: .gpuPower, title: "GPU", to: &rows)
+        appendPower(power.aneWatts, id: .anePower, title: "Neural Engine", to: &rows)
+        appendPower(power.memoryWatts, id: .memoryPower, title: "Memory", to: &rows)
+        appendPower(power.gpuMemoryWatts, id: .gpuMemoryPower, title: "GPU SRAM", to: &rows)
+        appendPower(power.displayWatts, id: .displayPower, title: "Built-in Display", to: &rows)
+        appendPower(
+            power.externalDisplayWatts,
+            id: .externalDisplayPower,
+            title: "External Displays",
+            to: &rows
+        )
         return rows
     }
 
@@ -382,6 +405,20 @@ struct BatteryMenuPresenter {
     ) {
         guard let capacity else { return }
         rows.append(BatteryMenuRow(id: id, title: title, value: "\(capacity) mAh"))
+    }
+
+    private func appendPower(
+        _ watts: Double?,
+        id: BatteryMenuItemID,
+        title: String,
+        to rows: inout [BatteryMenuRow]
+    ) {
+        guard let watts, watts.isFinite, watts >= 0 else { return }
+        rows.append(BatteryMenuRow(
+            id: id,
+            title: title,
+            value: String(format: "%.2f W", watts)
+        ))
     }
 
     private func filtered(

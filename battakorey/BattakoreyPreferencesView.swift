@@ -5,6 +5,7 @@ import SwiftUI
 private enum BattakoreyPreferencesPage: Hashable {
     case mainMenu
     case charging
+    case componentPower
     case internals
     case about
 }
@@ -40,7 +41,7 @@ struct BattakoreyPreferencesRoot: View {
                 SettingsPageGroup(
                     id: "advanced",
                     title: "Advanced",
-                    pages: [internalsPage]
+                    pages: [componentPowerPage, internalsPage]
                 ),
                 SettingsPageGroup(id: "application", pages: [aboutPage])
             ]
@@ -112,6 +113,24 @@ struct BattakoreyPreferencesRoot: View {
         }
     }
 
+    private var componentPowerPage: SettingsPage<BattakoreyPreferencesPage> {
+        SettingsPage(
+            id: .componentPower,
+            title: "Component Power",
+            subtitle: "Choose live hardware energy counters shown in the menu.",
+            icon: .system("cpu")
+        ) {
+            SettingsPaneStack {
+                optionSection(
+                    "Processor",
+                    options: Self.processorPowerOptions,
+                    footer: "Sampled once per second through IOReport. Readings disappear gracefully when a channel is unavailable."
+                )
+                optionSection("Memory & Display", options: Self.memoryDisplayPowerOptions)
+            }
+        }
+    }
+
     private var aboutPage: SettingsPage<BattakoreyPreferencesPage> {
         SettingsPage(
             id: .about,
@@ -125,9 +144,10 @@ struct BattakoreyPreferencesRoot: View {
 
     private func optionSection(
         _ title: String,
-        options: [BatteryMenuOption]
+        options: [BatteryMenuOption],
+        footer: String? = nil
     ) -> some View {
-        SettingsSection(title) {
+        SettingsSection(title, footer: footer) {
             ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
                 if index > 0 {
                     SettingsRowSeparator()
@@ -173,6 +193,19 @@ struct BattakoreyPreferencesRoot: View {
         BatteryMenuOption(id: .powerContract, title: "Power Contract", caption: "Negotiated adapter voltage and current."),
         BatteryMenuOption(id: .liveInput, title: "Live Input", caption: "Measured input power from AppleSMC."),
         BatteryMenuOption(id: .dcInputRail, title: "DC Input Rail", caption: "Measured input voltage and current.")
+    ]
+
+    private static let processorPowerOptions = [
+        BatteryMenuOption(id: .cpuPower, title: "CPU Power", caption: "Combined efficiency and performance core energy."),
+        BatteryMenuOption(id: .gpuPower, title: "GPU Power", caption: "Graphics processor energy-model estimate."),
+        BatteryMenuOption(id: .anePower, title: "Neural Engine Power", caption: "Apple Neural Engine activity and energy use.")
+    ]
+
+    private static let memoryDisplayPowerOptions = [
+        BatteryMenuOption(id: .memoryPower, title: "Memory Power", caption: "DRAM energy-model estimate."),
+        BatteryMenuOption(id: .gpuMemoryPower, title: "GPU SRAM Power", caption: "On-chip graphics memory energy."),
+        BatteryMenuOption(id: .displayPower, title: "Built-in Display Power", caption: "Internal display subsystem energy."),
+        BatteryMenuOption(id: .externalDisplayPower, title: "External Display Power", caption: "External display pipeline energy.")
     ]
 
     private static let diagnosticOptions = [
@@ -239,7 +272,7 @@ private struct BattakoreyAboutPane: View {
             SettingsSection("Details") {
                 SettingsValueRow(
                     title: "Battery Data",
-                    value: "IOPowerSources · AppleSmartBattery · AppleSMC"
+                    value: "IOPowerSources · AppleSmartBattery · AppleSMC · IOReport"
                 )
                 SettingsRowSeparator()
                 SettingsValueRow(title: "Requirements", value: "macOS 13 or later")

@@ -8,6 +8,7 @@ protocol BatteryInfoProviding {
 
 final class IOKitBatteryInfoProvider: BatteryInfoProviding {
     private let smcPowerReader = SMCPowerReader()
+    private let ioReportPowerReader = IOReportPowerReader()
     private let registryKeys = [
         "CurrentCapacity",
         "ExternalConnected",
@@ -40,7 +41,8 @@ final class IOKitBatteryInfoProvider: BatteryInfoProviding {
             registry: registry,
             powerSource: powerSourceDescription() ?? [:],
             adapter: externalPowerAdapterDetails(),
-            smcPower: smcPowerReader.read()
+            smcPower: smcPowerReader.read(),
+            ioReportPower: ioReportPowerReader?.read()
         )
         return BatterySnapshot(rawData: rawData)
     }

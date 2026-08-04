@@ -5,17 +5,20 @@ struct BatteryRawData {
     let powerSource: [String: Any]
     let adapter: [String: Any]?
     let smcPower: SMCPowerReading?
+    let ioReportPower: IOReportPowerReading?
 
     init(
         registry: [String: Any],
         powerSource: [String: Any],
         adapter: [String: Any]?,
-        smcPower: SMCPowerReading? = nil
+        smcPower: SMCPowerReading? = nil,
+        ioReportPower: IOReportPowerReading? = nil
     ) {
         self.registry = registry
         self.powerSource = powerSource
         self.adapter = adapter
         self.smcPower = smcPower
+        self.ioReportPower = ioReportPower
     }
 }
 
@@ -98,6 +101,7 @@ struct BatterySnapshot: Equatable {
     let inputVoltageVolts: Double?
     let inputCurrentAmps: Double?
     let inputPowerWatts: Double?
+    let ioReportPower: IOReportPowerReading?
     let optimizedChargingActive: Bool?
     let lowPowerModeActive: Bool?
     let permanentFailureStatus: Int?
@@ -207,6 +211,7 @@ struct BatterySnapshot: Equatable {
         self.inputVoltageVolts = rawData.smcPower?.inputVolts
         self.inputCurrentAmps = rawData.smcPower?.inputAmps
         self.inputPowerWatts = rawData.smcPower?.inputWatts
+        self.ioReportPower = rawData.ioReportPower
 
         self.optimizedChargingActive = Self.boolean(
             in: powerSourceData,

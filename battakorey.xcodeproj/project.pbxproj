@@ -18,6 +18,8 @@
 		C00300000000000000000004 /* BattakoreyPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00300000000000000000003 /* BattakoreyPreferencesView.swift */; };
 		C00300000000000000000012 /* BatteryMenuPreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00300000000000000000011 /* BatteryMenuPreferencesTests.swift */; };
 		C00400000000000000000002 /* FlowingDaySettings in Frameworks */ = {isa = PBXBuildFile; productRef = C00400000000000000000001 /* FlowingDaySettings */; };
+		C00500000000000000000002 /* IOReportPowerReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00500000000000000000001 /* IOReportPowerReader.swift */; };
+		C00500000000000000000012 /* IOReportPowerReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00500000000000000000011 /* IOReportPowerReaderTests.swift */; };
 		BF40FF892696A78C00E01F04 /* BattakoreyImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF40FF882696A78C00E01F04 /* BattakoreyImage.swift */; };
 		BF40FF8B2696A80B00E01F04 /* IOBattakorey.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF40FF8A2696A80B00E01F04 /* IOBattakorey.swift */; };
 		BF40FF8D2696B08D00E01F04 /* BattakoreyMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF40FF8C2696B08D00E01F04 /* BattakoreyMenu.swift */; };
@@ -50,6 +52,8 @@
 		C00300000000000000000001 /* BatteryMenuPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryMenuPreferences.swift; sourceTree = "<group>"; };
 		C00300000000000000000003 /* BattakoreyPreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BattakoreyPreferencesView.swift; sourceTree = "<group>"; };
 		C00300000000000000000011 /* BatteryMenuPreferencesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryMenuPreferencesTests.swift; sourceTree = "<group>"; };
+		C00500000000000000000001 /* IOReportPowerReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOReportPowerReader.swift; sourceTree = "<group>"; };
+		C00500000000000000000011 /* IOReportPowerReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOReportPowerReaderTests.swift; sourceTree = "<group>"; };
 		BF40FF882696A78C00E01F04 /* BattakoreyImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BattakoreyImage.swift; sourceTree = "<group>"; };
 		BF40FF8A2696A80B00E01F04 /* IOBattakorey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOBattakorey.swift; sourceTree = "<group>"; };
 		BF40FF8C2696B08D00E01F04 /* BattakoreyMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BattakoreyMenu.swift; sourceTree = "<group>"; };
@@ -107,6 +111,7 @@
 				C00100000000000000000003 /* BatteryMenuPresenter.swift */,
 				C00300000000000000000001 /* BatteryMenuPreferences.swift */,
 				C00100000000000000000005 /* SMCPowerReader.swift */,
+				C00500000000000000000001 /* IOReportPowerReader.swift */,
 				BF40FF8C2696B08D00E01F04 /* BattakoreyMenu.swift */,
 				C00300000000000000000003 /* BattakoreyPreferencesView.swift */,
 				BF40FF882696A78C00E01F04 /* BattakoreyImage.swift */,
@@ -130,6 +135,7 @@
 				C00200000000000000000003 /* MockBatteryData.swift */,
 				C00200000000000000000004 /* SMCPowerReaderTests.swift */,
 				C00300000000000000000011 /* BatteryMenuPreferencesTests.swift */,
+				C00500000000000000000011 /* IOReportPowerReaderTests.swift */,
 			);
 			path = battakoreyTests;
 			sourceTree = "<group>";
@@ -244,6 +250,7 @@
 				C00200000000000000000013 /* MockBatteryData.swift in Sources */,
 				C00200000000000000000014 /* SMCPowerReaderTests.swift in Sources */,
 				C00300000000000000000012 /* BatteryMenuPreferencesTests.swift in Sources */,
+				C00500000000000000000012 /* IOReportPowerReaderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -255,6 +262,7 @@
 				C00100000000000000000004 /* BatteryMenuPresenter.swift in Sources */,
 				C00300000000000000000002 /* BatteryMenuPreferences.swift in Sources */,
 				C00100000000000000000006 /* SMCPowerReader.swift in Sources */,
+				C00500000000000000000002 /* IOReportPowerReader.swift in Sources */,
 				BFF40F042698613C00331DC0 /* NSBezierPathExtension.swift in Sources */,
 				BFD857B5269402BD00E2F423 /* AppDelegate.swift in Sources */,
 				BF40FF892696A78C00E01F04 /* BattakoreyImage.swift in Sources */,
