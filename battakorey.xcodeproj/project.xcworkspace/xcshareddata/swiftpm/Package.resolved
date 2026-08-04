@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/cocoa-xu/flowing-day-ui",
       "state" : {
-        "revision" : "8ca0bb871197612f2aee9e1c1d5a0f91f2c9c70e",
-        "version" : "1.1.0"
+        "revision" : "18d68c524ba045cd20d72dae12dc4f950b22a35a",
+        "version" : "1.1.1"
       }
     }
   ],
