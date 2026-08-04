@@ -13,6 +13,8 @@
 # Battakorey
 ![Battakorey](assets/Battakorey.png)
 
+Requires macOS 13 or later.
+
 The purple colour and the face of the tako indicates the remaining percentage of your battakorey.
 
 

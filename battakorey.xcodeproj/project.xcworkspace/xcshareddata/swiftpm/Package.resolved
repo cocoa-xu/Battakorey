@@ -1,0 +1,15 @@
+{
+  "originHash" : "2adb92d9176b103ba446476d58c86b75cdb2dff45e85f2dab5de576b8e8737c6",
+  "pins" : [
+    {
+      "identity" : "flowing-day-ui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/cocoa-xu/flowing-day-ui",
+      "state" : {
+        "revision" : "8ca0bb871197612f2aee9e1c1d5a0f91f2c9c70e",
+        "version" : "1.1.0"
+      }
+    }
+  ],
+  "version" : 3
+}

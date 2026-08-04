@@ -1,18 +1,26 @@
 import Cocoa
 
 final class BattakoreyMenu: NSMenu {
+    var preferencesHandler: (() -> Void)?
+
     private let presenter = BatteryMenuPresenter()
     private var layout: [String] = []
     private var rowViews: [BattakoreyMenuItem] = []
+    private var hasBuiltMenu = false
 
-    func update(with battery: BatterySnapshot) {
-        let sections = presenter.sections(for: battery)
-        let detailSections = presenter.detailSections(for: battery)
+    func prepare() {
+        guard !hasBuiltMenu else { return }
+        rebuild(with: [], detailSections: [])
+    }
+
+    func update(with battery: BatterySnapshot, visibility: BatteryMenuVisibility) {
+        let sections = presenter.sections(for: battery, visibility: visibility)
+        let detailSections = presenter.detailSections(for: battery, visibility: visibility)
         let newLayout = layout(for: sections, prefix: "main")
             + layout(for: detailSections, prefix: "details")
         let rows = sections.flatMap(\.rows) + detailSections.flatMap(\.rows)
 
-        if layout == newLayout, rowViews.count == rows.count {
+        if hasBuiltMenu, layout == newLayout, rowViews.count == rows.count {
             for (view, row) in zip(rowViews, rows) {
                 view.update(title: row.title, value: row.value)
             }
@@ -29,16 +37,30 @@ final class BattakoreyMenu: NSMenu {
     ) {
         removeAllItems()
         rowViews.removeAll()
+        hasBuiltMenu = true
 
         populate(sections, in: self)
         if !detailSections.isEmpty {
-            addItem(.separator())
+            if !sections.isEmpty {
+                addItem(.separator())
+            }
             let detailsItem = NSMenuItem(title: "Battery Internals", action: nil, keyEquivalent: "")
             let detailsMenu = NSMenu(title: "Battery Internals")
             populate(detailSections, in: detailsMenu)
             detailsItem.submenu = detailsMenu
             addItem(detailsItem)
         }
+
+        if !sections.isEmpty || !detailSections.isEmpty {
+            addItem(.separator())
+        }
+        let preferencesItem = NSMenuItem(
+            title: "Preferences…",
+            action: #selector(showPreferences),
+            keyEquivalent: ","
+        )
+        preferencesItem.target = self
+        addItem(preferencesItem)
 
         addItem(.separator())
         let quitItem = NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q")
@@ -69,8 +91,12 @@ final class BattakoreyMenu: NSMenu {
 
     private func layout(for sections: [BatteryMenuSection], prefix: String) -> [String] {
         sections.flatMap { section in
-            ["\(prefix):\(section.title ?? "")"] + section.rows.map { "\(prefix):\($0.title)" }
+            ["\(prefix):\(section.title ?? "")"] + section.rows.map { "\(prefix):\($0.id.rawValue)" }
         }
+    }
+
+    @objc private func showPreferences() {
+        preferencesHandler?()
     }
 
     @objc private func quit() {
