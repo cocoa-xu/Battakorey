@@ -58,7 +58,7 @@ struct BattakoreyPreferencesRoot: View {
             SettingsPaneStack {
                 SettingsSection(
                     "Presets",
-                    footer: "Presets only change which rows are visible. No battery data is collected."
+                    footer: "Presets only change menu presentation. No battery data is collected."
                 ) {
                     SettingsRow(
                         title: "Visible information",
@@ -75,6 +75,17 @@ struct BattakoreyPreferencesRoot: View {
                                 ))
                         }
                     }
+                }
+
+                SettingsSection("Layout") {
+                    SettingsSwitchRow(
+                        title: "Section Titles",
+                        caption: "Show category headings such as Capacity and Electrical.",
+                        isOn: Binding(
+                            get: { model.visibility.showsSectionTitles },
+                            set: model.setShowsSectionTitles
+                        )
+                    )
                 }
 
                 optionSection("Status", options: Self.statusOptions)

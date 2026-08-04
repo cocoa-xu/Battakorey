@@ -7,10 +7,22 @@ final class BatteryMenuPreferencesTests: XCTestCase {
         let model = BatteryPreferencesModel(store: store)
 
         XCTAssertEqual(model.visibility, .recommended)
-        XCTAssertTrue(model.isVisible(.batteryLevel))
-        XCTAssertFalse(model.isVisible(.cellVoltages))
-        XCTAssertFalse(model.isVisible(.cpuPower))
+        XCTAssertEqual(model.visibility.visibleItemIDs, [
+            .batteryLevel,
+            .status,
+            .powerSource,
+            .timeRemaining,
+            .currentCharge,
+            .fullCharge,
+            .capacityRetention,
+            .cycles,
+            .systemDraw,
+            .adapterRating,
+            .liveInput
+        ])
+        XCTAssertFalse(model.visibility.showsSectionTitles)
         XCTAssertTrue(store.values.isEmpty)
+        XCTAssertTrue(store.booleans.isEmpty)
     }
 
     func testPersistsChangesAndNotifiesTheMenu() {
@@ -27,6 +39,7 @@ final class BatteryMenuPreferencesTests: XCTestCase {
             Set(store.values[BatteryPreferencesModel.storageKey] ?? []),
             Set(model.visibility.visibleItemIDs.map(\.rawValue))
         )
+        XCTAssertEqual(store.booleans[BatteryPreferencesModel.sectionTitlesStorageKey], false)
     }
 
     func testRestoresAnEmptySelectionAndIgnoresUnknownItems() {
@@ -37,9 +50,26 @@ final class BatteryMenuPreferencesTests: XCTestCase {
         let restoredModel = BatteryPreferencesModel(
             store: MockBatteryPreferencesStore(values: [key: ["temperature", "futureMetric"]])
         )
+        let hiddenTitlesModel = BatteryPreferencesModel(store: MockBatteryPreferencesStore(
+            values: [key: ["temperature"]],
+            booleans: [BatteryPreferencesModel.sectionTitlesStorageKey: false]
+        ))
 
         XCTAssertTrue(emptyModel.visibility.visibleItemIDs.isEmpty)
+        XCTAssertTrue(emptyModel.visibility.showsSectionTitles)
         XCTAssertEqual(restoredModel.visibility.visibleItemIDs, [.temperature])
+        XCTAssertTrue(restoredModel.visibility.showsSectionTitles)
+        XCTAssertFalse(hiddenTitlesModel.visibility.showsSectionTitles)
+    }
+
+    func testPersistsSectionTitlePreference() {
+        let store = MockBatteryPreferencesStore()
+        let model = BatteryPreferencesModel(store: store)
+
+        model.setShowsSectionTitles(true)
+
+        XCTAssertTrue(model.visibility.showsSectionTitles)
+        XCTAssertEqual(store.booleans[BatteryPreferencesModel.sectionTitlesStorageKey], true)
     }
 
     func testPresetsReplaceTheCurrentSelection() {
@@ -50,17 +80,24 @@ final class BatteryMenuPreferencesTests: XCTestCase {
 
         model.showAllItems()
         XCTAssertEqual(model.visibility, .all)
+        XCTAssertTrue(model.visibility.showsSectionTitles)
 
         model.useRecommendedItems()
         XCTAssertEqual(model.visibility, .recommended)
+        XCTAssertFalse(model.visibility.showsSectionTitles)
     }
 }
 
 private final class MockBatteryPreferencesStore: BatteryPreferencesStoring {
     var values: [String: [String]]
+    var booleans: [String: Bool]
 
-    init(values: [String: [String]] = [:]) {
+    init(
+        values: [String: [String]] = [:],
+        booleans: [String: Bool] = [:]
+    ) {
         self.values = values
+        self.booleans = booleans
     }
 
     func stringArray(forKey key: String) -> [String]? {
@@ -69,5 +106,13 @@ private final class MockBatteryPreferencesStore: BatteryPreferencesStoring {
 
     func setStringArray(_ value: [String], forKey key: String) {
         values[key] = value
+    }
+
+    func boolean(forKey key: String) -> Bool? {
+        booleans[key]
+    }
+
+    func setBoolean(_ value: Bool, forKey key: String) {
+        booleans[key] = value
     }
 }

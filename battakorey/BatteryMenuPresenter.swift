@@ -427,7 +427,8 @@ struct BatteryMenuPresenter {
     ) -> [BatteryMenuSection] {
         sections.compactMap { section in
             let rows = section.rows.filter { visibility.contains($0.id) }
-            return rows.isEmpty ? nil : BatteryMenuSection(title: section.title, rows: rows)
+            let title = visibility.showsSectionTitles ? section.title : nil
+            return rows.isEmpty ? nil : BatteryMenuSection(title: title, rows: rows)
         }
     }
 

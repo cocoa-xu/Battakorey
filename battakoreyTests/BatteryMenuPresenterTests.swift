@@ -87,6 +87,21 @@ final class BatteryMenuPresenterTests: XCTestCase {
         XCTAssertEqual(detailSections.flatMap(\.rows).map(\.id), [.cellVoltages])
     }
 
+    func testHidesSectionTitlesWithoutChangingRowOrder() throws {
+        let battery = try XCTUnwrap(BatterySnapshot(rawData: MockBatteryData.discharging))
+        let visibility = BatteryMenuVisibility(
+            visibleItemIDs: [.currentCharge, .temperature, .cellVoltages],
+            showsSectionTitles: false
+        )
+        let sections = presenter.sections(for: battery, visibility: visibility)
+        let detailSections = presenter.detailSections(for: battery, visibility: visibility)
+
+        XCTAssertEqual(sections.map(\.title), [nil, nil])
+        XCTAssertEqual(sections.flatMap(\.rows).map(\.id), [.currentCharge, .temperature])
+        XCTAssertEqual(detailSections.map(\.title), [nil])
+        XCTAssertEqual(detailSections.flatMap(\.rows).map(\.id), [.cellVoltages])
+    }
+
     private func rowValues(in sections: [BatteryMenuSection]) -> [String: String] {
         Dictionary(uniqueKeysWithValues: sections.flatMap(\.rows).map { ($0.title, $0.value) })
     }

@@ -53,24 +53,37 @@ enum BatteryMenuItemID: String, CaseIterable, Hashable {
 
 struct BatteryMenuVisibility: Equatable {
     let visibleItemIDs: Set<BatteryMenuItemID>
+    let showsSectionTitles: Bool
 
-    static let all = BatteryMenuVisibility(visibleItemIDs: Set(BatteryMenuItemID.allCases))
+    init(
+        visibleItemIDs: Set<BatteryMenuItemID>,
+        showsSectionTitles: Bool = true
+    ) {
+        self.visibleItemIDs = visibleItemIDs
+        self.showsSectionTitles = showsSectionTitles
+    }
 
-    static let recommended = BatteryMenuVisibility(visibleItemIDs: [
-        .batteryLevel,
-        .status,
-        .powerSource,
-        .timeRemaining,
-        .capacityRetention,
-        .cycles,
-        .temperature,
-        .batteryPower,
-        .systemDraw,
-        .adapterRating,
-        .liveInput,
-        .optimizedCharging,
-        .lowPowerMode
-    ])
+    static let all = BatteryMenuVisibility(
+        visibleItemIDs: Set(BatteryMenuItemID.allCases),
+        showsSectionTitles: true
+    )
+
+    static let recommended = BatteryMenuVisibility(
+        visibleItemIDs: [
+            .batteryLevel,
+            .status,
+            .powerSource,
+            .timeRemaining,
+            .currentCharge,
+            .fullCharge,
+            .capacityRetention,
+            .cycles,
+            .systemDraw,
+            .adapterRating,
+            .liveInput
+        ],
+        showsSectionTitles: false
+    )
 
     func contains(_ itemID: BatteryMenuItemID) -> Bool {
         visibleItemIDs.contains(itemID)
@@ -80,16 +93,27 @@ struct BatteryMenuVisibility: Equatable {
 protocol BatteryPreferencesStoring {
     func stringArray(forKey key: String) -> [String]?
     func setStringArray(_ value: [String], forKey key: String)
+    func boolean(forKey key: String) -> Bool?
+    func setBoolean(_ value: Bool, forKey key: String)
 }
 
 extension UserDefaults: BatteryPreferencesStoring {
     func setStringArray(_ value: [String], forKey key: String) {
         set(value, forKey: key)
     }
+
+    func boolean(forKey key: String) -> Bool? {
+        object(forKey: key) as? Bool
+    }
+
+    func setBoolean(_ value: Bool, forKey key: String) {
+        set(value, forKey: key)
+    }
 }
 
 final class BatteryPreferencesModel: ObservableObject {
     static let storageKey = "VisibleBatteryMenuItems"
+    static let sectionTitlesStorageKey = "ShowsBatteryMenuSectionTitles"
 
     @Published private(set) var visibility: BatteryMenuVisibility
     var onChange: ((BatteryMenuVisibility) -> Void)?
@@ -104,13 +128,16 @@ final class BatteryPreferencesModel: ObservableObject {
         self.store = store
         self.storageKey = storageKey
 
-        if let storedItemIDs = store.stringArray(forKey: storageKey) {
-            visibility = BatteryMenuVisibility(visibleItemIDs: Set(
-                storedItemIDs.compactMap(BatteryMenuItemID.init(rawValue:))
-            ))
-        } else {
-            visibility = .recommended
-        }
+        let storedItemIDs = store.stringArray(forKey: storageKey)
+        let visibleItemIDs = storedItemIDs.map {
+            Set($0.compactMap(BatteryMenuItemID.init(rawValue:)))
+        } ?? BatteryMenuVisibility.recommended.visibleItemIDs
+        let showsSectionTitles = store.boolean(forKey: Self.sectionTitlesStorageKey)
+            ?? (storedItemIDs == nil ? BatteryMenuVisibility.recommended.showsSectionTitles : true)
+        visibility = BatteryMenuVisibility(
+            visibleItemIDs: visibleItemIDs,
+            showsSectionTitles: showsSectionTitles
+        )
     }
 
     func isVisible(_ itemID: BatteryMenuItemID) -> Bool {
@@ -124,7 +151,17 @@ final class BatteryPreferencesModel: ObservableObject {
         } else {
             visibleItemIDs.remove(itemID)
         }
-        update(BatteryMenuVisibility(visibleItemIDs: visibleItemIDs))
+        update(BatteryMenuVisibility(
+            visibleItemIDs: visibleItemIDs,
+            showsSectionTitles: visibility.showsSectionTitles
+        ))
+    }
+
+    func setShowsSectionTitles(_ showsSectionTitles: Bool) {
+        update(BatteryMenuVisibility(
+            visibleItemIDs: visibility.visibleItemIDs,
+            showsSectionTitles: showsSectionTitles
+        ))
     }
 
     func useRecommendedItems() {
@@ -141,6 +178,10 @@ final class BatteryPreferencesModel: ObservableObject {
         store.setStringArray(
             visibility.visibleItemIDs.map(\.rawValue).sorted(),
             forKey: storageKey
+        )
+        store.setBoolean(
+            visibility.showsSectionTitles,
+            forKey: Self.sectionTitlesStorageKey
         )
         onChange?(visibility)
     }
