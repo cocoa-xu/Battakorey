@@ -49,6 +49,11 @@ Battakorey combines macOS power-source APIs with read-only `AppleSmartBattery` I
 
 The additional telemetry does not require root access or disabling System Integrity Protection. The app is intentionally not sandboxed, which makes this build unsuitable for Mac App Store distribution.
 
+### References
+
+[WhatBattery](https://github.com/darrylmorley/whatbattery) was consulted as a
+reference while researching battery telemetry exposed by macOS.
+
 ## Development
 
 The test suite uses mocked IORegistry, power-source, adapter, and SMC payloads. It can run on CI machines without a battery:

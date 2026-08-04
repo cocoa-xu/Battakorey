@@ -9,23 +9,15 @@ struct SMCPowerReading: Equatable {
 }
 
 final class SMCPowerReader {
-    private var connection: io_connect_t = 0
-
-    deinit {
-        if connection != 0 {
-            IOServiceClose(connection)
-        }
-    }
+    private let client = AppleSMCClient()
 
     func read() -> SMCPowerReading? {
-        guard open() else { return nil }
-
-        let batteryWatts = plausible(readFloat(key: "PPBR"), range: 0..<200)
-        let inputVolts = plausible(readFloat(key: "VD0R"), range: 0..<100)
-        let inputAmps = plausible(readFloat(key: "ID0R"), range: 0..<50)
-        let reportedInputWatts = plausible(readFloat(key: "PDTR"), range: 0..<500)
-        let calculatedInputWatts = inputVolts.flatMap { volts in inputAmps.map { volts * $0 } }
-        let inputWatts = reportedInputWatts ?? calculatedInputWatts
+        let batteryWatts = value(for: .batteryPower)
+        let inputVolts = value(for: .inputVoltage)
+        let inputAmps = value(for: .inputCurrent)
+        let inputWatts = value(for: .inputPower) ?? inputVolts.flatMap { volts in
+            inputAmps.map { volts * $0 }
+        }
 
         guard batteryWatts != nil || inputVolts != nil || inputAmps != nil || inputWatts != nil else {
             return nil
@@ -38,98 +30,149 @@ final class SMCPowerReader {
         )
     }
 
-    private func open() -> Bool {
-        guard MemoryLayout<SMCParamStruct>.stride == 80 else { return false }
-        if connection != 0 { return true }
-        guard let matching = IOServiceMatching("AppleSMC") else { return false }
-        let service = IOServiceGetMatchingService(mach_port_t(MACH_PORT_NULL), matching)
-        guard service != IO_OBJECT_NULL else { return false }
-        defer { IOObjectRelease(service) }
-
-        var newConnection: io_connect_t = 0
-        guard IOServiceOpen(service, mach_task_self_, 0, &newConnection) == KERN_SUCCESS else {
-            return false
-        }
-        connection = newConnection
-        return true
-    }
-
-    private func readFloat(key: String) -> Double? {
-        guard let bytes = readKey(key) else { return nil }
-        return Self.decodeFloat(bytes).map(Double.init)
-    }
-
-    private func plausible(_ value: Double?, range: Range<Double>) -> Double? {
-        guard let value, range.contains(value) else { return nil }
-        return value
-    }
-
-    private func readKey(_ key: String) -> [UInt8]? {
-        guard let encodedKey = Self.fourCC(key) else { return nil }
-
-        var info = SMCParamStruct()
-        info.key = encodedKey
-        info.data8 = Self.getKeyInfoCommand
-        guard let keyInfo = callDriver(input: &info), keyInfo.keyInfo.dataSize > 0 else {
-            return nil
-        }
-
-        var read = SMCParamStruct()
-        read.key = encodedKey
-        read.keyInfo.dataSize = keyInfo.keyInfo.dataSize
-        read.keyInfo.dataType = keyInfo.keyInfo.dataType
-        read.data8 = Self.readKeyCommand
-        guard let output = callDriver(input: &read) else { return nil }
-
-        var bytes = output.bytes
-        return withUnsafeBytes(of: &bytes) {
-            Array($0.prefix(Int(min(keyInfo.keyInfo.dataSize, 32))))
-        }
-    }
-
-    private func callDriver(input: inout SMCParamStruct) -> SMCParamStruct? {
-        guard connection != 0 else { return nil }
-        var output = SMCParamStruct()
-        var outputSize = MemoryLayout<SMCParamStruct>.stride
-        let result = IOConnectCallStructMethod(
-            connection,
-            Self.kernelIndex,
-            &input,
-            MemoryLayout<SMCParamStruct>.stride,
-            &output,
-            &outputSize
-        )
-        guard result == KERN_SUCCESS, output.result == 0 else { return nil }
-        return output
-    }
-
     static func decodeFloat(_ bytes: [UInt8]) -> Float? {
-        guard bytes.count >= 4 else { return nil }
-        let bits = UInt32(bytes[0])
-            | UInt32(bytes[1]) << 8
-            | UInt32(bytes[2]) << 16
-            | UInt32(bytes[3]) << 24
-        let value = Float(bitPattern: bits)
-        return value.isFinite ? value : nil
+        AppleSMCClient.decodeFloat(bytes)
     }
 
     static func fourCC(_ key: String) -> UInt32? {
-        let scalars = Array(key.unicodeScalars)
-        guard scalars.count == 4 else { return nil }
-        var result: UInt32 = 0
-        for scalar in scalars {
-            guard scalar.value <= 0xFF else { return nil }
-            result = (result << 8) | UInt32(scalar.value)
-        }
-        return result
+        AppleSMCKey(key)?.encoded
     }
 
-    private static let kernelIndex: UInt32 = 2
-    private static let readKeyCommand: UInt8 = 5
-    private static let getKeyInfoCommand: UInt8 = 9
+    private func value(for rail: PowerRail) -> Double? {
+        guard let reading = client.floatValue(for: rail.key).map(Double.init),
+              rail.validRange.contains(reading) else {
+            return nil
+        }
+        return reading
+    }
 }
 
-private struct SMCVersion {
+private enum PowerRail {
+    case batteryPower
+    case inputVoltage
+    case inputCurrent
+    case inputPower
+
+    var key: AppleSMCKey {
+        switch self {
+        case .batteryPower:
+            return AppleSMCKey("PPBR")!
+        case .inputVoltage:
+            return AppleSMCKey("VD0R")!
+        case .inputCurrent:
+            return AppleSMCKey("ID0R")!
+        case .inputPower:
+            return AppleSMCKey("PDTR")!
+        }
+    }
+
+    var validRange: Range<Double> {
+        switch self {
+        case .batteryPower:
+            return 0..<200
+        case .inputVoltage:
+            return 0..<100
+        case .inputCurrent:
+            return 0..<50
+        case .inputPower:
+            return 0..<500
+        }
+    }
+}
+
+private struct AppleSMCKey {
+    let encoded: UInt32
+
+    init?(_ value: String) {
+        let bytes = Array(value.utf8)
+        guard bytes.count == 4 else { return nil }
+        encoded = bytes.reduce(0) { ($0 << 8) | UInt32($1) }
+    }
+}
+
+private final class AppleSMCClient {
+    private var connection: io_connect_t = 0
+
+    deinit {
+        if connection != 0 {
+            IOServiceClose(connection)
+        }
+    }
+
+    func floatValue(for key: AppleSMCKey) -> Float? {
+        guard connect(), let payload = payload(for: key) else { return nil }
+        return Self.decodeFloat(payload)
+    }
+
+    static func decodeFloat(_ bytes: [UInt8]) -> Float? {
+        guard bytes.count >= MemoryLayout<UInt32>.size else { return nil }
+        var bits: UInt32 = 0
+        withUnsafeMutableBytes(of: &bits) { destination in
+            destination.copyBytes(from: bytes.prefix(MemoryLayout<UInt32>.size))
+        }
+        let value = Float(bitPattern: UInt32(littleEndian: bits))
+        return value.isFinite ? value : nil
+    }
+
+    private func connect() -> Bool {
+        guard MemoryLayout<AppleSMCMessage>.stride == 80 else { return false }
+        if connection != 0 { return true }
+        guard let matching = IOServiceMatching("AppleSMC") else { return false }
+        let service = IOServiceGetMatchingService(kIOMainPortDefault, matching)
+        guard service != IO_OBJECT_NULL else { return false }
+        defer { IOObjectRelease(service) }
+
+        var openedConnection: io_connect_t = 0
+        guard IOServiceOpen(service, mach_task_self_, 0, &openedConnection) == KERN_SUCCESS else {
+            return false
+        }
+        connection = openedConnection
+        return true
+    }
+
+    private func payload(for key: AppleSMCKey) -> [UInt8]? {
+        var metadataRequest = AppleSMCMessage()
+        metadataRequest.key = key.encoded
+        metadataRequest.operation = AppleSMCOperation.readMetadata.rawValue
+        guard let metadataResponse = exchange(metadataRequest) else { return nil }
+
+        let length = metadataResponse.metadata.length
+        guard length > 0, length <= 32 else { return nil }
+
+        var valueRequest = AppleSMCMessage()
+        valueRequest.key = key.encoded
+        valueRequest.metadata = metadataResponse.metadata
+        valueRequest.operation = AppleSMCOperation.readValue.rawValue
+        guard var valueResponse = exchange(valueRequest) else { return nil }
+
+        return withUnsafeBytes(of: &valueResponse.payload) {
+            Array($0.prefix(Int(length)))
+        }
+    }
+
+    private func exchange(_ request: AppleSMCMessage) -> AppleSMCMessage? {
+        var request = request
+        var response = AppleSMCMessage()
+        var responseSize = MemoryLayout<AppleSMCMessage>.stride
+        let result = IOConnectCallStructMethod(
+            connection,
+            2,
+            &request,
+            MemoryLayout<AppleSMCMessage>.stride,
+            &response,
+            &responseSize
+        )
+        guard result == KERN_SUCCESS, response.result == 0 else { return nil }
+        return response
+    }
+}
+
+private enum AppleSMCOperation: UInt8 {
+    case readValue = 5
+    case readMetadata = 9
+}
+
+private struct AppleSMCVersion {
     var major: UInt8 = 0
     var minor: UInt8 = 0
     var build: UInt8 = 0
@@ -137,38 +180,38 @@ private struct SMCVersion {
     var release: UInt16 = 0
 }
 
-private struct SMCPLimitData {
+private struct AppleSMCPowerLimits {
     var version: UInt16 = 0
     var length: UInt16 = 0
-    var cpuPLimit: UInt32 = 0
-    var gpuPLimit: UInt32 = 0
-    var memoryPLimit: UInt32 = 0
+    var cpu: UInt32 = 0
+    var gpu: UInt32 = 0
+    var memory: UInt32 = 0
 }
 
-private struct SMCKeyInfoData {
-    var dataSize: UInt32 = 0
-    var dataType: UInt32 = 0
-    var dataAttributes: UInt8 = 0
+private struct AppleSMCMetadata {
+    var length: UInt32 = 0
+    var type: UInt32 = 0
+    var attributes: UInt8 = 0
 }
 
-private typealias SMCBytes = (
+private typealias AppleSMCPayload = (
     UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8,
     UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8,
     UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8,
     UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8
 )
 
-private struct SMCParamStruct {
+private struct AppleSMCMessage {
     var key: UInt32 = 0
-    var version = SMCVersion()
-    var powerLimit = SMCPLimitData()
-    var keyInfo = SMCKeyInfoData()
-    var padding: UInt16 = 0
+    var version = AppleSMCVersion()
+    var limits = AppleSMCPowerLimits()
+    var metadata = AppleSMCMetadata()
+    var alignment: UInt16 = 0
     var result: UInt8 = 0
     var status: UInt8 = 0
-    var data8: UInt8 = 0
-    var data32: UInt32 = 0
-    var bytes: SMCBytes = (
+    var operation: UInt8 = 0
+    var data: UInt32 = 0
+    var payload: AppleSMCPayload = (
         0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0,
