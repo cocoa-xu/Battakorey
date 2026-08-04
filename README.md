@@ -11,19 +11,26 @@
 
 
 # Battakorey
-![Battakorey](assets/Battakorey.png)
+
+Recommended Settings:
+
+![Battakorey](assets/Battakorey-Recommended.png)
+
+All possible stats:
+
+![Battakorey-All](assets/Battakorey-All.png)
+
+Preferences:
+
+![Battakorey-Preferences](assets/preferences.png)
 
 Requires macOS 13 or later.
 
 The purple colour and the face of the tako indicates the remaining percentage of your battakorey.
 
-
-
 #### 70%-100%
 
 ![Happy](assets/happy.png)
-
-
 
 #### 40%-70%
 
