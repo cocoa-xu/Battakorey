@@ -14,14 +14,16 @@ permissions:
 
 jobs:
   build_with_signing:
-    runs-on: macos-latest
+    runs-on: macos-15
     env:
       PROJECT_NAME: battakorey
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
-      - name: Install the Apple certificate and provisioning profile
+      - name: Install signing certificates
         env:
           APPLE_DEV_CERTIFICATE_BASE64: ${{ secrets.APPLE_DEV_CERTIFICATE_BASE64 }}
           DEV_ID_APP_CERTIFICATE_BASE64: ${{ secrets.DEV_ID_APP_CERTIFICATE_BASE64 }}
@@ -33,19 +35,17 @@ jobs:
           DEV_ID_APP_CERTIFICATE_PATH=$RUNNER_TEMP/dev_id_app.p12
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
-          # import certificate and provisioning profile from secrets
-          echo -n "$APPLE_DEV_CERTIFICATE_BASE64" | base64 --decode -o $APPLE_DEV_CERTIFICATE_PATH
-          echo -n "$DEV_ID_APP_CERTIFICATE_BASE64" | base64 --decode -o $DEV_ID_APP_CERTIFICATE_PATH
+          printf '%s' "$APPLE_DEV_CERTIFICATE_BASE64" | base64 --decode -o "$APPLE_DEV_CERTIFICATE_PATH"
+          printf '%s' "$DEV_ID_APP_CERTIFICATE_BASE64" | base64 --decode -o "$DEV_ID_APP_CERTIFICATE_PATH"
 
-          # create temporary keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
-          # import certificate to keychain
-          security import $APPLE_DEV_CERTIFICATE_PATH -P "$APPLE_DEV_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security import $DEV_ID_APP_CERTIFICATE_PATH -P "$DEV_ID_APP_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security list-keychain -d user -s $KEYCHAIN_PATH
+          security import "$APPLE_DEV_CERTIFICATE_PATH" -P "$APPLE_DEV_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security import "$DEV_ID_APP_CERTIFICATE_PATH" -P "$DEV_ID_APP_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
 
       - name: Build app
         run: |
@@ -54,7 +54,9 @@ jobs:
             -project "${{ env.PROJECT_NAME }}.xcodeproj/" \
             -scheme "${{ env.PROJECT_NAME }}" \
             -destination "generic/platform=macOS" \
-            -archivePath "dist/${{ env.PROJECT_NAME }}.xcarchive"
+            -archivePath "dist/${{ env.PROJECT_NAME }}.xcarchive" \
+            ONLY_ACTIVE_ARCH=NO \
+            ARCHS="arm64 x86_64"
           xcodebuild \
             -exportArchive \
             -archivePath "dist/${{ env.PROJECT_NAME }}.xcarchive" \
@@ -87,12 +89,15 @@ jobs:
           xcrun stapler staple "./dist/${CAPITALIZED_PROJECT_NAME}-Universal.dmg"
 
       - name: Upload release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             dist/*.dmg
 
-      - name: Clean up keychain and provisioning profile
+      - name: Clean up keychain
         if: ${{ always() }}
         run: |
-          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          if [ -e "$KEYCHAIN_PATH" ]; then
+            security delete-keychain "$KEYCHAIN_PATH"
+          fi
