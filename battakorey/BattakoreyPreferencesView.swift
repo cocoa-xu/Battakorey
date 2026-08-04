@@ -242,8 +242,6 @@ private struct BattakoreyAboutPane: View {
                     value: "IOPowerSources · AppleSmartBattery · AppleSMC"
                 )
                 SettingsRowSeparator()
-                SettingsValueRow(title: "Privileges", value: "No root access or SIP changes")
-                SettingsRowSeparator()
                 SettingsValueRow(title: "Requirements", value: "macOS 13 or later")
             }
 
