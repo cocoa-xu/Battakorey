@@ -700,7 +700,7 @@ class BattakoreyImage: NSView {
         return layer
     }()
     
-    let tentacleView: TentacleImage?
+    let tentacleView: TentacleImage
     
     // original vector image is drawn on a 34.0-by-20.0 canvas
     static let baseWidth: CGFloat  = 34.0
@@ -718,15 +718,16 @@ class BattakoreyImage: NSView {
     
     func addLayers() {
         self.wantsLayer = true
-        self.layer?.addSublayer(takoShapePathLayer)
-        self.layer!.addSublayer(takoSkinPathLeftLayer)
-        self.layer!.addSublayer(takoSkinPathRightLayer)
-        self.layer!.addSublayer(takoLeftEyePathLayer)
-        self.layer!.addSublayer(takoRightEyePathLayer)
-        self.layer!.addSublayer(takoMouthPathLayer)
-        self.layer!.addSublayer(takoMouthInnerPathLayer)
-        self.layer!.addSublayer(takoToothPathLayer)
-        self.layer!.addSublayer(takoRingPathLayer)
+        guard let layer else { return }
+        layer.addSublayer(takoShapePathLayer)
+        layer.addSublayer(takoSkinPathLeftLayer)
+        layer.addSublayer(takoSkinPathRightLayer)
+        layer.addSublayer(takoLeftEyePathLayer)
+        layer.addSublayer(takoRightEyePathLayer)
+        layer.addSublayer(takoMouthPathLayer)
+        layer.addSublayer(takoMouthInnerPathLayer)
+        layer.addSublayer(takoToothPathLayer)
+        layer.addSublayer(takoRingPathLayer)
         
         takoSkinPathLeftLayer.mask = leftSideMaskLayer
         takoSkinPathRightLayer.mask = rightSideMaskLayer
@@ -756,7 +757,7 @@ class BattakoreyImage: NSView {
     
     override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
-        self.tentacleView?.setFrameSize(NSMakeSize(
+        self.tentacleView.setFrameSize(NSMakeSize(
             TentacleImage.baseWidth/BattakoreyImage.baseWidth*newSize.width,
             TentacleImage.baseHeight/BattakoreyImage.baseHeight*newSize.height))
         updateScaleMultiplier(newSize.width, newSize.height)
@@ -767,16 +768,16 @@ class BattakoreyImage: NSView {
         super.init(frame: frameRect)
         updateScaleMultiplier(frameRect.width, frameRect.height)
         addLayers()
-        tentacleView!.isHidden = true
-        self.addSubview(tentacleView!)
+        tentacleView.isHidden = true
+        self.addSubview(tentacleView)
     }
     
     required init?(coder: NSCoder) {
         tentacleView = TentacleImage.init(frame: NSMakeRect(0, 0, TentacleImage.baseWidth, TentacleImage.baseHeight))
         super.init(coder: coder)
         addLayers()
-        tentacleView?.isHidden = true
-        self.addSubview(tentacleView!)
+        tentacleView.isHidden = true
+        self.addSubview(tentacleView)
     }
     
     func updateImage(_ percentage: CGFloat) {
@@ -804,13 +805,13 @@ class BattakoreyImage: NSView {
             if prevCharging != .Charging {
                 redraw = true
                 prevCharging = .Charging
-                tentacleView?.isHidden = false
+                tentacleView.isHidden = false
             }
         } else {
             if prevCharging != .NotCharging {
                 redraw = true
                 prevCharging = .NotCharging
-                tentacleView?.isHidden = true
+                tentacleView.isHidden = true
             }
         }
         

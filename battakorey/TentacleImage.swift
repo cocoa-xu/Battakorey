@@ -795,11 +795,12 @@ class TentacleImage: NSView {
     
     func addLayers() {
         self.wantsLayer = true
-        self.layer?.addSublayer(tentacleShapePathLayer)
-        self.layer?.addSublayer(tentacleSkinPathLayer)
-        self.layer!.addSublayer(tentacleSkinLightPathLayer)
-        self.layer!.addSublayer(tentaclePatternPathLayer)
-        self.layer!.addSublayer(tentacleSuctionCupPathLayer)
+        guard let layer else { return }
+        layer.addSublayer(tentacleShapePathLayer)
+        layer.addSublayer(tentacleSkinPathLayer)
+        layer.addSublayer(tentacleSkinLightPathLayer)
+        layer.addSublayer(tentaclePatternPathLayer)
+        layer.addSublayer(tentacleSuctionCupPathLayer)
     }
     
     func updateScaleMultiplier(_ width: CGFloat, _ height: CGFloat) {

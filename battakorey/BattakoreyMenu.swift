@@ -80,7 +80,10 @@ final class BattakoreyMenu: NSMenu {
             }
             for row in section.rows {
                 let item = NSMenuItem()
-                let view = BattakoreyMenuItem(frame: NSRect(x: 0, y: 0, width: 340, height: 23))
+                let view = BattakoreyMenuItem(frame: NSRect(
+                    origin: .zero,
+                    size: BattakoreyMenuLayout.rowSize
+                ))
                 view.update(title: row.title, value: row.value)
                 item.view = view
                 menu.addItem(item)
@@ -109,18 +112,17 @@ final class BattakoreyMenuItem: NSView {
     private let detailLabel: NSTextField
 
     override init(frame frameRect: NSRect) {
-        let margin: CGFloat = 12
-        let titleWidth = frameRect.width * 0.42
+        let titleWidth = frameRect.width * BattakoreyMenuLayout.titleWidthFraction
         titleLabel = NSTextField(frame: NSRect(
-            x: margin,
+            x: BattakoreyMenuLayout.horizontalMargin,
             y: 0,
-            width: titleWidth - margin,
+            width: titleWidth - BattakoreyMenuLayout.horizontalMargin,
             height: frameRect.height
         ))
         detailLabel = NSTextField(frame: NSRect(
             x: titleWidth,
             y: 0,
-            width: frameRect.width - titleWidth - margin,
+            width: frameRect.width - titleWidth - BattakoreyMenuLayout.horizontalMargin,
             height: frameRect.height
         ))
         super.init(frame: frameRect)
@@ -151,6 +153,12 @@ final class BattakoreyMenuItem: NSView {
         label.isSelectable = false
         label.lineBreakMode = .byTruncatingTail
     }
+}
+
+private enum BattakoreyMenuLayout {
+    static let rowSize = NSSize(width: 340, height: 23)
+    static let horizontalMargin: CGFloat = 12
+    static let titleWidthFraction: CGFloat = 0.42
 }
 
 final class BattakoreyTextFieldCell: NSTextFieldCell {
