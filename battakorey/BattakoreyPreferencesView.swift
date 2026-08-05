@@ -188,7 +188,8 @@ struct BattakoreyPreferencesRoot: View {
             id: .about,
             title: "About",
             subtitle: "Version and project information.",
-            icon: .system("info.circle")
+            icon: .system("info.circle"),
+            headerIcon: .application
         ) {
             BattakoreyAboutPane(versionText: Self.versionText)
         }
@@ -363,8 +364,7 @@ struct BattakoreyPreferencesRoot: View {
     private static var versionText: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
             ?? "Unknown"
-        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
-        return build.map { "Version \(version) (\($0))" } ?? "Version \(version)"
+        return "Version \(version)"
     }
 }
 
