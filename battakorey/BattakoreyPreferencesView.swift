@@ -130,7 +130,25 @@ struct BattakoreyPreferencesRoot: View {
             icon: .system("waveform.path.ecg")
         ) {
             SettingsPaneStack {
-                optionSection("Cell Measurements", options: Self.cellOptions)
+                SettingsSection("Cell Measurements") {
+                    multiSelectRow(
+                        title: "Voltage",
+                        caption: "Choose the individual cell voltages and voltage spread shown in the menu.",
+                        options: Self.cellVoltageOptions
+                    )
+                    SettingsRowSeparator()
+                    multiSelectRow(
+                        title: "Learned Capacity",
+                        caption: "Choose the learned Qmax values and capacity spread shown in the menu.",
+                        options: Self.cellCapacityOptions
+                    )
+                    SettingsRowSeparator()
+                    multiSelectRow(
+                        title: "Resistance",
+                        caption: "Choose the learned resistance values and resistance spread shown in the menu.",
+                        options: Self.cellResistanceOptions
+                    )
+                }
                 optionSection("Gauge History", options: Self.gaugeOptions)
                 optionSection("Lifetime", options: Self.lifetimeOptions)
             }
@@ -145,17 +163,22 @@ struct BattakoreyPreferencesRoot: View {
             icon: .system("cpu")
         ) {
             SettingsPaneStack {
-                SettingsSection(
+                multiSelectSection(
                     "Processor",
-                    footer: "Sampled once per second through IOReport. Readings disappear gracefully when a channel is unavailable."
-                ) {
-                    multiSelectRow(
-                        title: "Visible Components",
-                        caption: "Choose the compute power estimates shown in the menu.",
-                        options: Self.processorPowerOptions
-                    )
-                }
-                optionSection("Memory & Display", options: Self.memoryDisplayPowerOptions)
+                    caption: "Choose the CPU, GPU, and Neural Engine estimates shown in the menu.",
+                    options: Self.processorPowerOptions
+                )
+                multiSelectSection(
+                    "Memory",
+                    caption: "Choose the system memory and GPU SRAM estimates shown in the menu.",
+                    options: Self.memoryPowerOptions
+                )
+                multiSelectSection(
+                    "Display",
+                    caption: "Choose the built-in and external display estimates shown in the menu.",
+                    options: Self.displayPowerOptions,
+                    footer: "All component readings are sampled once per second through IOReport and disappear gracefully when a channel is unavailable."
+                )
             }
         }
     }
@@ -178,6 +201,21 @@ struct BattakoreyPreferencesRoot: View {
     ) -> some View {
         SettingsSection(title, footer: footer) {
             optionRows(options)
+        }
+    }
+
+    private func multiSelectSection(
+        _ title: String,
+        caption: String,
+        options: [BatteryMenuOption],
+        footer: String? = nil
+    ) -> some View {
+        SettingsSection(title, footer: footer) {
+            multiSelectRow(
+                title: "Visible Readings",
+                caption: caption,
+                options: options
+            )
         }
     }
 
@@ -266,11 +304,14 @@ struct BattakoreyPreferencesRoot: View {
         BatteryMenuOption(id: .anePower, title: "Neural Engine", caption: "Apple Neural Engine activity and energy use.")
     ]
 
-    private static let memoryDisplayPowerOptions = [
-        BatteryMenuOption(id: .memoryPower, title: "Memory Power", caption: "DRAM energy-model estimate."),
-        BatteryMenuOption(id: .gpuMemoryPower, title: "GPU SRAM Power", caption: "On-chip graphics memory energy."),
-        BatteryMenuOption(id: .displayPower, title: "Built-in Display Power", caption: "Internal display subsystem energy."),
-        BatteryMenuOption(id: .externalDisplayPower, title: "External Display Power", caption: "External display pipeline energy.")
+    private static let memoryPowerOptions = [
+        BatteryMenuOption(id: .memoryPower, title: "Memory", caption: "DRAM energy-model estimate."),
+        BatteryMenuOption(id: .gpuMemoryPower, title: "GPU SRAM", caption: "On-chip graphics memory energy.")
+    ]
+
+    private static let displayPowerOptions = [
+        BatteryMenuOption(id: .displayPower, title: "Built-in", caption: "Internal display subsystem energy."),
+        BatteryMenuOption(id: .externalDisplayPower, title: "External", caption: "External display pipeline energy.")
     ]
 
     private static let diagnosticOptions = [
@@ -289,11 +330,17 @@ struct BattakoreyPreferencesRoot: View {
         BatteryMenuOption(id: .slowChargingReason, title: "Slow Charging Reason", caption: "Raw reason flags when charging is limited.")
     ]
 
-    private static let cellOptions = [
+    private static let cellVoltageOptions = [
         BatteryMenuOption(id: .cellVoltages, title: "Cell Voltages", caption: "Individual cell-group voltages."),
-        BatteryMenuOption(id: .cellVoltageDelta, title: "Voltage Delta", caption: "Spread between the highest and lowest cell."),
+        BatteryMenuOption(id: .cellVoltageDelta, title: "Voltage Delta", caption: "Spread between the highest and lowest cell.")
+    ]
+
+    private static let cellCapacityOptions = [
         BatteryMenuOption(id: .learnedQmax, title: "Learned Qmax", caption: "Controller-learned capacity per cell group."),
-        BatteryMenuOption(id: .qmaxDelta, title: "Qmax Delta", caption: "Spread in learned cell capacities."),
+        BatteryMenuOption(id: .qmaxDelta, title: "Qmax Delta", caption: "Spread in learned cell capacities.")
+    ]
+
+    private static let cellResistanceOptions = [
         BatteryMenuOption(id: .resistance, title: "Resistance", caption: "Raw learned cell resistance values."),
         BatteryMenuOption(id: .resistanceDelta, title: "Resistance Delta", caption: "Spread between resistance values.")
     ]
