@@ -112,7 +112,7 @@ final class BattakoreyMenuItem: NSView {
     private let detailLabel: NSTextField
 
     override init(frame frameRect: NSRect) {
-        let titleWidth = frameRect.width * BattakoreyMenuLayout.titleWidthFraction
+        let titleWidth = frameRect.width * BattakoreyMenuLayout.minimumTitleWidthFraction
         titleLabel = NSTextField(frame: NSRect(
             x: BattakoreyMenuLayout.horizontalMargin,
             y: 0,
@@ -143,6 +143,20 @@ final class BattakoreyMenuItem: NSView {
         titleLabel.textColor = .labelColor
         detailLabel.stringValue = value
         detailLabel.textColor = .secondaryLabelColor
+        layoutLabels()
+    }
+
+    private func layoutLabels() {
+        let availableWidth = bounds.width - (BattakoreyMenuLayout.horizontalMargin * 2)
+        let minimumTitleWidth = bounds.width
+            * BattakoreyMenuLayout.minimumTitleWidthFraction
+            - BattakoreyMenuLayout.horizontalMargin
+        let preferredTitleWidth = ceil(titleLabel.cell?.cellSize.width ?? minimumTitleWidth)
+        let titleWidth = min(max(minimumTitleWidth, preferredTitleWidth), availableWidth)
+
+        titleLabel.frame.size.width = titleWidth
+        detailLabel.frame.origin.x = BattakoreyMenuLayout.horizontalMargin + titleWidth
+        detailLabel.frame.size.width = availableWidth - titleWidth
     }
 
     private func configure(_ label: NSTextField) {
@@ -158,7 +172,7 @@ final class BattakoreyMenuItem: NSView {
 private enum BattakoreyMenuLayout {
     static let rowSize = NSSize(width: 340, height: 23)
     static let horizontalMargin: CGFloat = 12
-    static let titleWidthFraction: CGFloat = 0.42
+    static let minimumTitleWidthFraction: CGFloat = 0.42
 }
 
 final class BattakoreyTextFieldCell: NSTextFieldCell {
