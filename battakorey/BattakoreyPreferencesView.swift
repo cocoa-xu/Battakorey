@@ -410,12 +410,8 @@ private struct BattakoreyAboutPane: View {
                 Text("Copyright © 2026")
                     .foregroundStyle(SettingsPalette.faint)
                 Link(destination: Self.cocoaURL) {
-                    HStack(spacing: 4) {
-                        Text("Cocoa")
-                        Image(systemName: "arrow.up.right")
-                            .font(.system(size: 8, weight: .semibold))
-                    }
-                    .foregroundStyle(accent.foreground)
+                    Text("Cocoa")
+                        .foregroundStyle(accent.foreground)
                 }
                 .buttonStyle(.plain)
             }
@@ -431,11 +427,7 @@ private struct BattakoreyAboutPane: View {
     ) -> some View {
         SettingsRow(title: title, caption: caption) {
             Link(destination: destination) {
-                HStack(spacing: 5) {
-                    Text("GitHub")
-                    Image(systemName: "arrow.up.right")
-                        .font(.system(size: 9, weight: .semibold))
-                }
+                Text("GitHub")
             }
             .buttonStyle(SettingsSoftButtonStyle())
             .help("Open \(title) on GitHub")

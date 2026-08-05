@@ -44,10 +44,10 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         CODE_SIGN_IDENTITY: "${CODE_SIGN_IDENTITY}"
         CODE_SIGN_STYLE: Manual
-        CURRENT_PROJECT_VERSION: 42
+        CURRENT_PROJECT_VERSION: 44
         ENABLE_APP_SANDBOX: NO
         ENABLE_HARDENED_RUNTIME: YES
-        MARKETING_VERSION: 2.0.0
+        MARKETING_VERSION: 2.1.0
         PRODUCT_BUNDLE_IDENTIFIER: moe.uwucocoa.battakorey
     dependencies:
       - package: FlowingDayUI
