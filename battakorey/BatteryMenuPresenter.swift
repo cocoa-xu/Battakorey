@@ -229,7 +229,7 @@ struct BatteryMenuPresenter {
             rows.append(BatteryMenuRow(
                 id: .dcInputRail,
                 title: "DC Input Rail",
-                value: String(format: "%.2f V × %.2f A", voltage, current)
+                value: String(format: "%.2fV @ %.2fA", voltage, current)
             ))
         }
         return rows
@@ -560,7 +560,7 @@ struct BatteryMenuPresenter {
             parts.append("Port \(portNumber)")
         }
         if let current = contract.currentAmps {
-            parts.append(String(format: "%.1f V × %.1f A", contract.voltageVolts, current))
+            parts.append(String(format: "%.1fV @ %.1fA", contract.voltageVolts, current))
         } else {
             parts.append(String(format: "%.1f V", contract.voltageVolts))
         }
