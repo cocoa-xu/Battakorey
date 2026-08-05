@@ -24,7 +24,7 @@ struct BatteryMenuPresenter {
 
         let componentPowerRows = componentPowerRows(for: battery)
         if !componentPowerRows.isEmpty {
-            sections.append(BatteryMenuSection(title: "Component Power", rows: componentPowerRows))
+            sections.append(BatteryMenuSection(title: "Component Estimates", rows: componentPowerRows))
         }
 
         let adapterRows = adapterRows(for: battery)
@@ -109,10 +109,24 @@ struct BatteryMenuPresenter {
             to: &rows
         )
 
-        if let retention = battery.capacityRetentionPercentage {
+        if let maximumCapacity = battery.officialMaximumCapacityPercentage {
+            rows.append(BatteryMenuRow(
+                id: .maximumCapacity,
+                title: "Maximum Capacity",
+                value: "\(maximumCapacity)%"
+            ))
+        }
+        if let condition = battery.officialCondition {
+            rows.append(BatteryMenuRow(
+                id: .batteryCondition,
+                title: "Condition",
+                value: condition
+            ))
+        }
+        if let retention = battery.rawCapacityRatioPercentage {
             rows.append(BatteryMenuRow(
                 id: .capacityRetention,
-                title: "Capacity Retention",
+                title: "Raw Capacity Ratio",
                 value: String(format: "%.1f%%", retention)
             ))
         }
@@ -124,7 +138,7 @@ struct BatteryMenuPresenter {
                     format: "%d / %d (%.1f%%)",
                     cycles,
                     designCycles,
-                    Double(cycles) / Double(designCycles) * 100
+                    Double(cycles) / Double(designCycles) * PowerPercentage.fullScale
                 )
             } else {
                 value = "\(cycles)"
@@ -157,17 +171,24 @@ struct BatteryMenuPresenter {
                 value: String(format: "%+.3f A", current)
             ))
         }
-        if let power = battery.batteryPowerWatts {
+        if let power = battery.batteryFlow?.value {
             rows.append(BatteryMenuRow(
                 id: .batteryPower,
-                title: "Battery Power",
+                title: "Battery Flow",
                 value: String(format: "%+.1f W", power)
             ))
         }
-        if let systemPower = battery.systemPowerWatts {
+        if let target = battery.chargingTargetPower?.value {
+            rows.append(BatteryMenuRow(
+                id: .chargeTarget,
+                title: "Controller Charge Target",
+                value: String(format: "%.1f W", target)
+            ))
+        }
+        if let systemPower = battery.controllerSystemLoad?.value {
             rows.append(BatteryMenuRow(
                 id: .systemDraw,
-                title: "System Draw",
+                title: "Controller System Load",
                 value: String(format: "%.1f W", systemPower)
             ))
         }
@@ -176,28 +197,35 @@ struct BatteryMenuPresenter {
 
     private func adapterRows(for battery: BatterySnapshot) -> [BatteryMenuRow] {
         var rows: [BatteryMenuRow] = []
-        if let watts = battery.adapterWatts {
+        if let watts = battery.adapterRating?.value {
             rows.append(BatteryMenuRow(
                 id: .adapterRating,
                 title: "Adapter Rating",
-                value: "\(watts) W"
+                value: String(format: "%.0f W", watts)
             ))
         }
-        if let voltage = battery.adapterVoltageVolts, let current = battery.adapterCurrentAmps {
+        if let capability = battery.adapterCapability {
             rows.append(BatteryMenuRow(
                 id: .powerContract,
-                title: "Power Contract",
-                value: String(format: "%.1f V × %.1f A", voltage, current)
+                title: "Adapter Electrical Capability",
+                value: formattedContract(capability)
             ))
         }
-        if let inputPower = battery.inputPowerWatts {
+        for contract in battery.negotiatedPowerContracts {
+            rows.append(BatteryMenuRow(
+                id: .pdContract,
+                title: "USB-C PD Contract",
+                value: formattedContract(contract)
+            ))
+        }
+        if let inputPower = battery.liveInputPower?.value {
             rows.append(BatteryMenuRow(
                 id: .liveInput,
                 title: "Live Input",
                 value: String(format: "%.1f W", inputPower)
             ))
         }
-        if let voltage = battery.inputVoltageVolts, let current = battery.inputCurrentAmps {
+        if let voltage = battery.inputVoltage?.value, let current = battery.inputCurrent?.value {
             rows.append(BatteryMenuRow(
                 id: .dcInputRail,
                 title: "DC Input Rail",
@@ -210,14 +238,14 @@ struct BatteryMenuPresenter {
     private func componentPowerRows(for battery: BatterySnapshot) -> [BatteryMenuRow] {
         guard let power = battery.ioReportPower else { return [] }
         var rows: [BatteryMenuRow] = []
-        appendPower(power.cpuWatts, id: .cpuPower, title: "CPU", to: &rows)
-        appendPower(power.gpuWatts, id: .gpuPower, title: "GPU", to: &rows)
-        appendPower(power.aneWatts, id: .anePower, title: "Neural Engine", to: &rows)
-        appendPower(power.memoryWatts, id: .memoryPower, title: "Memory", to: &rows)
-        appendPower(power.gpuMemoryWatts, id: .gpuMemoryPower, title: "GPU SRAM", to: &rows)
-        appendPower(power.displayWatts, id: .displayPower, title: "Built-in Display", to: &rows)
+        appendPower(power.cpuPower, id: .cpuPower, title: "CPU", to: &rows)
+        appendPower(power.gpuPower, id: .gpuPower, title: "GPU", to: &rows)
+        appendPower(power.anePower, id: .anePower, title: "Neural Engine", to: &rows)
+        appendPower(power.memoryPower, id: .memoryPower, title: "Memory", to: &rows)
+        appendPower(power.gpuMemoryPower, id: .gpuMemoryPower, title: "GPU SRAM", to: &rows)
+        appendPower(power.displayPower, id: .displayPower, title: "Built-in Display", to: &rows)
         appendPower(
-            power.externalDisplayWatts,
+            power.externalDisplayPower,
             id: .externalDisplayPower,
             title: "External Displays",
             to: &rows
@@ -352,6 +380,64 @@ struct BatteryMenuPresenter {
 
     private func diagnosticRows(for battery: BatterySnapshot) -> [BatteryMenuRow] {
         var rows: [BatteryMenuRow] = []
+        if let interruption = battery.chargeInterruption {
+            rows.append(BatteryMenuRow(
+                id: .chargeInterruption,
+                title: "Charging Hold",
+                value: chargeInterruption(interruption)
+            ))
+        }
+        if !battery.adapterErrors.isEmpty {
+            rows.append(BatteryMenuRow(
+                id: .adapterErrors,
+                title: "Adapter Issue",
+                value: battery.adapterErrors.map(adapterError).joined(separator: " · ")
+            ))
+        }
+        if let condition = battery.publicHealthHint {
+            rows.append(BatteryMenuRow(
+                id: .publicHealthHint,
+                title: "Public Health Hint",
+                value: condition
+            ))
+        }
+        if battery.capacityIsEstimated == true {
+            rows.append(BatteryMenuRow(
+                id: .capacityEstimated,
+                title: "Capacity Reading",
+                value: "Estimated"
+            ))
+        }
+        if !battery.batteryFailureModes.isEmpty {
+            rows.append(BatteryMenuRow(
+                id: .batteryFailureModes,
+                title: "Reported Battery Issues",
+                value: battery.batteryFailureModes.joined(separator: " · ")
+            ))
+        }
+        if let condition = battery.powerCondition {
+            if let pressure = condition.thermalPressure {
+                rows.append(BatteryMenuRow(
+                    id: .thermalPressure,
+                    title: "Thermal Pressure",
+                    value: thermalPressure(pressure)
+                ))
+            }
+            if let limits = condition.cpuPowerLimits {
+                let values = [
+                    limits.processorSpeedPercentage.map { "Speed \($0)%" },
+                    limits.schedulerTimePercentage.map { "Scheduler \($0)%" },
+                    limits.availableCPUCount.map { "\($0) CPUs" }
+                ].compactMap { $0 }
+                if !values.isEmpty {
+                    rows.append(BatteryMenuRow(
+                        id: .cpuPowerLimits,
+                        title: "CPU Power Limits",
+                        value: values.joined(separator: " · ")
+                    ))
+                }
+            }
+        }
         if let active = battery.optimizedChargingActive {
             rows.append(BatteryMenuRow(
                 id: .optimizedCharging,
@@ -408,16 +494,21 @@ struct BatteryMenuPresenter {
     }
 
     private func appendPower(
-        _ watts: Double?,
+        _ observation: ElectricalObservation?,
         id: BatteryMenuItemID,
         title: String,
         to rows: inout [BatteryMenuRow]
     ) {
-        guard let watts, watts.isFinite, watts >= 0 else { return }
+        guard let observation,
+              observation.unit == .watts,
+              observation.value.isFinite,
+              observation.value >= 0 else {
+            return
+        }
         rows.append(BatteryMenuRow(
             id: id,
             title: title,
-            value: String(format: "%.2f W", watts)
+            value: String(format: "%.2f W", observation.value)
         ))
     }
 
@@ -460,11 +551,64 @@ struct BatteryMenuPresenter {
 
     private func formattedTime(_ minutes: Int?) -> String {
         guard let minutes else { return "Calculating…" }
-        return "\(minutes / 60) h \(minutes % 60) m"
+        return "\(minutes / TimeUnit.minutesPerHour) h \(minutes % TimeUnit.minutesPerHour) m"
+    }
+
+    private func formattedContract(_ contract: PowerContract) -> String {
+        var parts: [String] = []
+        if let portNumber = contract.portNumber {
+            parts.append("Port \(portNumber)")
+        }
+        if let current = contract.currentAmps {
+            parts.append(String(format: "%.1f V × %.1f A", contract.voltageVolts, current))
+        } else {
+            parts.append(String(format: "%.1f V", contract.voltageVolts))
+        }
+        if let power = contract.maximumPowerWatts {
+            parts.append(String(format: "%.0f W", power))
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    private func chargeInterruption(_ interruption: ChargeInterruption) -> String {
+        switch interruption {
+        case .highTemperature: return "Battery temperature is too high"
+        case .lowTemperature: return "Battery temperature is too low"
+        case .highOrLowTemperature: return "Battery temperature is outside the charging range"
+        case .temperatureGradient: return "Battery temperature is uneven"
+        case let .unknown(value): return value
+        }
+    }
+
+    private func adapterError(_ error: AdapterError) -> String {
+        switch error {
+        case .insufficientAvailablePower: return "Insufficient available power"
+        case .foreignObjectDetected: return "Foreign object detected"
+        case .needsRepositioning: return "Reposition the device"
+        case let .unknown(flags): return formattedHex(flags)
+        }
+    }
+
+    private func thermalPressure(_ pressure: ThermalPressure) -> String {
+        switch pressure {
+        case .nominal: return "Nominal"
+        case .fair: return "Fair"
+        case .serious: return "Serious"
+        case .critical: return "Critical"
+        }
     }
 
     private func formattedHex(_ value: Int) -> String {
         let digits = String(value, radix: 16, uppercase: true)
-        return "0x\(String(repeating: "0", count: max(0, 8 - digits.count)))\(digits)"
+        let padding = max(0, DiagnosticFormat.hexadecimalWidth - digits.count)
+        return "0x\(String(repeating: "0", count: padding))\(digits)"
     }
+}
+
+private enum TimeUnit {
+    static let minutesPerHour = 60
+}
+
+private enum DiagnosticFormat {
+    static let hexadecimalWidth = 8
 }

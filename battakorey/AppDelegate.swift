@@ -6,24 +6,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let statusBarItem: NSStatusItem
     private let battakorey: BattakoreyImage
     private let menu: BattakoreyMenu
-    private let batteryProvider: BatteryInfoProviding
+    private let batteryMonitor: BatteryMonitor
     private let preferencesModel: BatteryPreferencesModel
     private lazy var preferencesController = BattakoreyPreferencesWindowController(
         model: preferencesModel
     )
     private var latestBattery: BatterySnapshot?
-    private var updateTimer: Timer?
 
     override init() {
         statusBarItem = NSStatusBar.system.statusItem(withLength: BattakoreyImage.baseWidth)
         battakorey = BattakoreyImage(frame: NSRect(
-            x: 0,
-            y: 0,
-            width: BattakoreyImage.baseWidth,
-            height: BattakoreyImage.baseHeight
+            origin: .zero,
+            size: NSSize(width: BattakoreyImage.baseWidth, height: BattakoreyImage.baseHeight)
         ))
         menu = BattakoreyMenu()
-        batteryProvider = IOKitBatteryInfoProvider()
+        batteryMonitor = BatteryMonitor()
         preferencesModel = BatteryPreferencesModel()
         super.init()
 
@@ -37,29 +34,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self, let battery = self.latestBattery else { return }
             self.menu.update(with: battery, visibility: visibility)
         }
+        batteryMonitor.onSnapshot = { [weak self] battery in
+            self?.update(with: battery)
+        }
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        updateTimer = Timer.scheduledTimer(
-            timeInterval: 1,
-            target: self,
-            selector: #selector(refreshBattery),
-            userInfo: nil,
-            repeats: true
-        )
-        updateBattery()
+        batteryMonitor.start()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        updateTimer?.invalidate()
+        batteryMonitor.stop()
     }
 
-    @objc private func refreshBattery() {
-        updateBattery()
-    }
-
-    private func updateBattery() {
-        guard let battery = batteryProvider.snapshot() else { return }
+    private func update(with battery: BatterySnapshot) {
         latestBattery = battery
         let percentage = CGFloat(battery.chargePercentage)
         if battakorey.percentage != percentage {

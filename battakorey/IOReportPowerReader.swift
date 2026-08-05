@@ -10,6 +10,57 @@ struct IOReportPowerReading: Equatable {
     let gpuMemoryWatts: Double?
     let displayWatts: Double?
     let externalDisplayWatts: Double?
+    let sampledAt: Date
+    let measurementWindow: TimeInterval
+
+    var cpuPower: ElectricalObservation? { observation(cpuWatts) }
+    var gpuPower: ElectricalObservation? { observation(gpuWatts) }
+    var anePower: ElectricalObservation? { observation(aneWatts) }
+    var memoryPower: ElectricalObservation? { observation(memoryWatts) }
+    var gpuMemoryPower: ElectricalObservation? { observation(gpuMemoryWatts) }
+    var displayPower: ElectricalObservation? { observation(displayWatts) }
+    var externalDisplayPower: ElectricalObservation? { observation(externalDisplayWatts) }
+
+    init(
+        cpuWatts: Double?,
+        gpuWatts: Double?,
+        aneWatts: Double?,
+        memoryWatts: Double?,
+        gpuMemoryWatts: Double?,
+        displayWatts: Double?,
+        externalDisplayWatts: Double?,
+        sampledAt: Date,
+        measurementWindow: TimeInterval
+    ) {
+        self.cpuWatts = cpuWatts
+        self.gpuWatts = gpuWatts
+        self.aneWatts = aneWatts
+        self.memoryWatts = memoryWatts
+        self.gpuMemoryWatts = gpuMemoryWatts
+        self.displayWatts = displayWatts
+        self.externalDisplayWatts = externalDisplayWatts
+        self.sampledAt = sampledAt
+        self.measurementWindow = measurementWindow
+    }
+
+    private func observation(_ watts: Double?) -> ElectricalObservation? {
+        watts.map {
+            ElectricalObservation(
+                value: $0,
+                unit: .watts,
+                kind: .estimated,
+                domain: .component,
+                direction: nil,
+                source: .ioReport,
+                sampledAt: sampledAt,
+                measurementWindow: measurementWindow,
+                freshnessLimit: PowerObservationFreshness.live,
+                stability: .privateABI,
+                accessTier: .enhanced,
+                confidence: .medium
+            )
+        }
+    }
 }
 
 struct IOReportEnergySample {
@@ -21,11 +72,12 @@ struct IOReportEnergySample {
 enum IOReportPowerDecoder {
     static func reading(
         from samples: [IOReportEnergySample],
-        duration: TimeInterval
+        duration: TimeInterval,
+        sampledAt: Date = Date()
     ) -> IOReportPowerReading? {
-        guard duration.isFinite, duration > 0 else { return nil }
+        guard duration.isFinite, IOReportSampling.validWindow.contains(duration) else { return nil }
 
-        var cpuWatts: Double?
+        var cpuAggregateWatts: [Int?: Double] = [:]
         var gpuWatts: Double?
         var aneWatts: Double?
         var memoryWatts: Double?
@@ -35,10 +87,12 @@ enum IOReportPowerDecoder {
 
         for sample in samples {
             guard let watts = watts(for: sample, duration: duration) else { continue }
+            let scope = dieScope(for: sample.channel)
+            let channel = baseChannelName(sample.channel)
 
-            switch sample.channel {
-            case let channel where channel.hasSuffix("CPU Energy"):
-                add(watts, to: &cpuWatts)
+            switch channel {
+            case "CPU Energy":
+                cpuAggregateWatts[scope] = max(cpuAggregateWatts[scope] ?? 0, watts)
             case "GPU Energy":
                 add(watts, to: &gpuWatts)
             case let channel where channel.hasPrefix("ANE"):
@@ -55,6 +109,8 @@ enum IOReportPowerDecoder {
                 continue
             }
         }
+
+        let cpuWatts = cpuPower(from: cpuAggregateWatts)
 
         let values = [
             cpuWatts,
@@ -74,8 +130,33 @@ enum IOReportPowerDecoder {
             memoryWatts: memoryWatts,
             gpuMemoryWatts: gpuMemoryWatts,
             displayWatts: displayWatts,
-            externalDisplayWatts: externalDisplayWatts
+            externalDisplayWatts: externalDisplayWatts,
+            sampledAt: sampledAt,
+            measurementWindow: duration
         )
+    }
+
+    private static func cpuPower(from values: [Int?: Double]) -> Double? {
+        guard !values.isEmpty else { return nil }
+        let dieValues = values.compactMap { scope, value in scope.map { ($0, value) } }
+        if dieValues.contains(where: { $0.0 == IOReportChannelScope.firstDieIndex }) {
+            return dieValues.reduce(0) { $0 + $1.1 }
+        }
+        return (values[nil] ?? 0) + dieValues.reduce(0) { $0 + $1.1 }
+    }
+
+    fileprivate static func baseChannelName(_ channel: String) -> String {
+        guard channel.hasPrefix(IOReportChannelScope.diePrefix) else { return channel }
+        let remainder = channel.dropFirst(IOReportChannelScope.diePrefix.count)
+        guard let separator = remainder.firstIndex(of: "_") else { return channel }
+        return String(remainder[remainder.index(after: separator)...])
+    }
+
+    private static func dieScope(for channel: String) -> Int? {
+        guard channel.hasPrefix(IOReportChannelScope.diePrefix) else { return nil }
+        let remainder = channel.dropFirst(IOReportChannelScope.diePrefix.count)
+        guard let separator = remainder.firstIndex(of: "_") else { return nil }
+        return Int(remainder[..<separator])
     }
 
     private static func watts(
@@ -89,11 +170,11 @@ enum IOReportPowerDecoder {
         case "j":
             joules = Double(sample.energy)
         case "mj":
-            joules = Double(sample.energy) / 1_000
+            joules = Double(sample.energy) / IOReportEnergyScale.millijoulesPerJoule
         case "uj", "µj":
-            joules = Double(sample.energy) / 1_000_000
+            joules = Double(sample.energy) / IOReportEnergyScale.microjoulesPerJoule
         case "nj":
-            joules = Double(sample.energy) / 1_000_000_000
+            joules = Double(sample.energy) / IOReportEnergyScale.nanojoulesPerJoule
         default:
             return nil
         }
@@ -109,6 +190,7 @@ final class IOReportPowerReader {
     private let api: IOReportAPI
     private let channels: CFMutableDictionary
     private let subscription: UnsafeMutableRawPointer
+    private let retainedSubscribedChannels: CFMutableDictionary?
     private var previousSample: CFDictionary?
     private var previousTimestamp: TimeInterval?
 
@@ -123,7 +205,7 @@ final class IOReportPowerReader {
             nil,
             channels,
             &subscribedChannels,
-            0,
+            IOReportAPIOption.default,
             nil
         ) else {
             return nil
@@ -132,6 +214,11 @@ final class IOReportPowerReader {
         self.api = api
         self.channels = channels
         self.subscription = subscription
+        self.retainedSubscribedChannels = subscribedChannels
+    }
+
+    deinit {
+        Unmanaged<AnyObject>.fromOpaque(subscription).release()
     }
 
     func read() -> IOReportPowerReading? {
@@ -158,7 +245,8 @@ final class IOReportPowerReader {
         let samples = api.energySamples(in: delta)
         return IOReportPowerDecoder.reading(
             from: samples,
-            duration: timestamp - previousTimestamp
+            duration: timestamp - previousTimestamp,
+            sampledAt: Date()
         )
     }
 }
@@ -229,7 +317,10 @@ private final class IOReportAPI {
     }
 
     func makePowerChannels() -> CFMutableDictionary? {
-        guard let allChannels = copyAllChannels(0, 0)?.takeRetainedValue(),
+        guard let allChannels = copyAllChannels(
+                IOReportAPIOption.default,
+                IOReportAPIOption.default
+              )?.takeRetainedValue(),
               let source = channelArray(in: allChannels) else {
             return nil
         }
@@ -242,7 +333,8 @@ private final class IOReportAPI {
         for index in 0..<CFArrayGetCount(source) {
             guard let pointer = CFArrayGetValueAtIndex(source, index) else { continue }
             let channel = unsafeBitCast(pointer, to: CFDictionary.self)
-            if string(from: channelGroup(channel)) == "Energy Model",
+            let group = string(from: channelGroup(channel))
+            if (group == "Energy Model" || group == "Energy Counters"),
                isPowerChannel(string(from: channelName(channel))) {
                 CFArrayAppendValue(selected, pointer)
             }
@@ -275,7 +367,7 @@ private final class IOReportAPI {
             return IOReportEnergySample(
                 channel: string(from: channelName(channel)),
                 unit: string(from: channelUnit(channel)),
-                energy: integerValue(channel, 0)
+                energy: integerValue(channel, IOReportAPIOption.defaultValueIndex)
             )
         }
     }
@@ -298,13 +390,14 @@ private final class IOReportAPI {
     }
 
     private func isPowerChannel(_ channel: String) -> Bool {
-        channel.hasSuffix("CPU Energy")
-            || channel == "GPU Energy"
-            || channel.hasPrefix("ANE")
-            || channel.hasPrefix("DRAM")
-            || channel.hasPrefix("GPU SRAM")
-            || channel == "DISP"
-            || channel == "DISPEXT"
+        let base = IOReportPowerDecoder.baseChannelName(channel)
+        return base == "CPU Energy"
+            || base == "GPU Energy"
+            || base.hasPrefix("ANE")
+            || base.hasPrefix("DRAM")
+            || base.hasPrefix("GPU SRAM")
+            || base == "DISP"
+            || base == "DISPEXT"
     }
 
     private static func resolve<T>(
@@ -315,4 +408,24 @@ private final class IOReportAPI {
         guard let symbol = dlsym(handle, name) else { return nil }
         return unsafeBitCast(symbol, to: type)
     }
+}
+
+private enum IOReportSampling {
+    static let validWindow = 0.05...5.0
+}
+
+private enum IOReportChannelScope {
+    static let diePrefix = "DIE_"
+    static let firstDieIndex = 0
+}
+
+private enum IOReportEnergyScale {
+    static let millijoulesPerJoule = 1_000.0
+    static let microjoulesPerJoule = 1_000_000.0
+    static let nanojoulesPerJoule = 1_000_000_000.0
+}
+
+private enum IOReportAPIOption {
+    static let `default`: UInt64 = 0
+    static let defaultValueIndex: Int32 = 0
 }

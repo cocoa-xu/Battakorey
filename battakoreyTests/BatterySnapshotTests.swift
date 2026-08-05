@@ -15,13 +15,17 @@ final class BatterySnapshotTests: XCTestCase {
         XCTAssertEqual(battery.rawMaximumCapacityMAh, 6_400)
         XCTAssertEqual(battery.nominalChargeCapacityMAh, 6_550)
         XCTAssertEqual(battery.designCapacityMAh, 8_000)
-        XCTAssertEqual(try XCTUnwrap(battery.capacityRetentionPercentage), 81.875, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(battery.rawCapacityRatioPercentage), 81.875, accuracy: 0.001)
         XCTAssertEqual(battery.cycleCount, 250)
         XCTAssertEqual(battery.designCycleCount, 1_000)
         XCTAssertEqual(try XCTUnwrap(battery.temperatureCelsius), 31.25, accuracy: 0.001)
         XCTAssertEqual(try XCTUnwrap(battery.voltageVolts), 11.84, accuracy: 0.001)
         XCTAssertEqual(try XCTUnwrap(battery.currentAmps), -2.15, accuracy: 0.001)
-        XCTAssertEqual(try XCTUnwrap(battery.batteryPowerWatts), -30.25, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(battery.batteryFlow?.value), -30.25, accuracy: 0.001)
+        XCTAssertEqual(battery.batteryFlow?.kind, .measured)
+        XCTAssertEqual(battery.batteryFlow?.domain, .battery)
+        XCTAssertEqual(battery.batteryFlow?.direction, .discharge)
+        XCTAssertEqual(battery.batteryFlow?.source, .smc)
         XCTAssertEqual(battery.cellDetails?.voltages, [3.950, 3.947, 3.952])
         XCTAssertEqual(battery.cellDetails?.voltageDeltaMillivolts, 5)
         XCTAssertEqual(battery.cellDetails?.learnedCapacitiesMAh, [7_900, 7_850, 7_920])
@@ -42,7 +46,9 @@ final class BatterySnapshotTests: XCTestCase {
         XCTAssertEqual(battery.lifetimeDetails?.maximumChargeCurrentAmps, 6)
         XCTAssertEqual(battery.lifetimeDetails?.maximumDischargeCurrentAmps, 9.5)
         XCTAssertEqual(battery.lifetimeDetails?.operatingTimeHours, 12_345)
-        XCTAssertEqual(try XCTUnwrap(battery.systemPowerWatts), 25.456, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(battery.controllerSystemLoad?.value), 25.456, accuracy: 0.001)
+        XCTAssertEqual(battery.controllerSystemLoad?.kind, .estimated)
+        XCTAssertEqual(battery.controllerSystemLoad?.source, .batteryController)
         XCTAssertEqual(battery.lowPowerModeActive, true)
         XCTAssertEqual(battery.optimizedChargingActive, false)
         XCTAssertEqual(battery.permanentFailureStatus, 0)
@@ -58,13 +64,31 @@ final class BatterySnapshotTests: XCTestCase {
         XCTAssertTrue(battery.isExternallyPowered)
         XCTAssertEqual(battery.powerSource, .ac)
         XCTAssertEqual(battery.timeRemainingMinutes, 48)
-        XCTAssertEqual(battery.adapterWatts, 96)
-        XCTAssertEqual(try XCTUnwrap(battery.adapterVoltageVolts), 20, accuracy: 0.001)
-        XCTAssertEqual(try XCTUnwrap(battery.adapterCurrentAmps), 4.8, accuracy: 0.001)
-        XCTAssertEqual(try XCTUnwrap(battery.batteryPowerWatts), 36.6, accuracy: 0.001)
-        XCTAssertEqual(try XCTUnwrap(battery.inputVoltageVolts), 20.1, accuracy: 0.001)
-        XCTAssertEqual(try XCTUnwrap(battery.inputCurrentAmps), 3.5, accuracy: 0.001)
-        XCTAssertEqual(try XCTUnwrap(battery.inputPowerWatts), 70.35, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(battery.adapterRating?.value), 96, accuracy: 0.001)
+        XCTAssertEqual(battery.adapterRating?.kind, .rated)
+        XCTAssertEqual(try XCTUnwrap(battery.adapterCapability?.voltageVolts), 20, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(battery.adapterCapability?.currentAmps), 4.8, accuracy: 0.001)
+        XCTAssertEqual(battery.adapterCapability?.kind, .rated)
+        XCTAssertEqual(try XCTUnwrap(battery.batteryFlow?.value), 36.6, accuracy: 0.001)
+        XCTAssertEqual(battery.batteryFlow?.kind, .measured)
+        XCTAssertEqual(battery.batteryFlow?.source, .batteryRegistry)
+        XCTAssertEqual(try XCTUnwrap(battery.chargingTargetPower?.value), 36.6, accuracy: 0.001)
+        XCTAssertEqual(battery.chargingTargetPower?.kind, .estimated)
+        XCTAssertEqual(battery.chargingTargetPower?.source, .batteryController)
+        XCTAssertEqual(try XCTUnwrap(battery.inputVoltage?.value), 20.1, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(battery.inputCurrent?.value), 3.5, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(battery.liveInputPower?.value), 70.35, accuracy: 0.001)
+        XCTAssertEqual(battery.liveInputPower?.kind, .measured)
+        XCTAssertEqual(battery.offeredPowerContracts.count, 1)
+        XCTAssertEqual(battery.offeredPowerContracts.first?.kind, .rated)
+        XCTAssertEqual(battery.offeredPowerContracts.first?.direction, .input)
+        XCTAssertEqual(battery.offeredPowerContracts.first?.accessTier, .enhanced)
+        XCTAssertEqual(battery.negotiatedPowerContracts.count, 1)
+        XCTAssertEqual(battery.negotiatedPowerContracts.first?.portNumber, 2)
+        XCTAssertEqual(battery.negotiatedPowerContracts.first?.kind, .contracted)
+        XCTAssertEqual(battery.negotiatedPowerContracts.first?.direction, .input)
+        XCTAssertEqual(battery.officialCondition, "Good")
+        XCTAssertEqual(battery.officialMaximumCapacityPercentage, 82)
     }
 
     func testMissingOptionalFieldsRemainNil() throws {
@@ -82,7 +106,7 @@ final class BatterySnapshotTests: XCTestCase {
         XCTAssertEqual(battery.powerSource, .battery)
         XCTAssertNil(battery.currentCapacityMAh)
         XCTAssertNil(battery.temperatureCelsius)
-        XCTAssertNil(battery.batteryPowerWatts)
+        XCTAssertNil(battery.batteryFlow)
         XCTAssertNil(battery.cellDetails)
     }
 
@@ -121,10 +145,110 @@ final class BatterySnapshotTests: XCTestCase {
         )
         let battery = try XCTUnwrap(BatterySnapshot(rawData: rawData))
 
-        XCTAssertNil(battery.batteryPowerWatts)
+        XCTAssertNil(battery.batteryFlow)
+        XCTAssertNil(battery.chargingTargetPower)
         XCTAssertNil(battery.cellDetails)
         XCTAssertNil(battery.lifetimeDetails)
         XCTAssertNil(battery.notChargingReason)
         XCTAssertNil(battery.slowChargingReason)
     }
+
+    func testDecodesPublicChargingDiagnostics() throws {
+        let rawData = BatteryRawData(
+            registry: ["CurrentCapacity": 50],
+            powerSource: [
+                "Power Source State": "AC Power",
+                "BatteryHealth": "Check Battery",
+                "BatteryHealthCondition": "Service Recommended",
+                "HealthConfidence": 2,
+                "BatteryFailureModes": ["Cell Imbalance"],
+                "CapacityEstimated": true,
+                "ChargeStatus": "HighTemperature"
+            ],
+            adapter: [
+                "ErrorFlags": TestAdapterErrorFlag.insufficientPower
+                    | TestAdapterErrorFlag.needsRepositioning
+            ]
+        )
+        let battery = try XCTUnwrap(BatterySnapshot(rawData: rawData))
+
+        XCTAssertEqual(battery.publicHealthHint, "Check Battery")
+        XCTAssertEqual(battery.publicHealthCondition, "Service Recommended")
+        XCTAssertEqual(battery.publicHealthConfidence, "Fair")
+        XCTAssertEqual(battery.batteryFailureModes, ["Cell Imbalance"])
+        XCTAssertEqual(battery.capacityIsEstimated, true)
+        XCTAssertEqual(battery.chargeInterruption, .highTemperature)
+        XCTAssertEqual(battery.adapterErrors, [
+            .insufficientAvailablePower,
+            .needsRepositioning
+        ])
+    }
+
+    func testSuppressesSelectedPDContractWhenPortIsInactive() throws {
+        let rawData = BatteryRawData(
+            registry: ["CurrentCapacity": 50, "ExternalConnected": true],
+            powerSource: ["Power Source State": "AC Power"],
+            adapter: nil,
+            portPower: PortPowerReading(
+                sources: [
+                    PortPowerSourceReading(
+                        portNumber: 1,
+                        kind: .usbPD,
+                        advertisedOptions: [],
+                        selectedOption: PortPowerOption(
+                            voltageVolts: 20,
+                            maximumCurrentAmps: 5,
+                            maximumPowerWatts: 100
+                        ),
+                        connectionActive: false
+                    )
+                ],
+                sampledAt: Date()
+            )
+        )
+        let battery = try XCTUnwrap(BatterySnapshot(rawData: rawData))
+
+        XCTAssertTrue(battery.negotiatedPowerContracts.isEmpty)
+    }
+
+    func testSuppressesStalePDContracts() throws {
+        let sampledAt = Date(timeIntervalSince1970: 1_000)
+        let rawData = BatteryRawData(
+            registry: ["CurrentCapacity": 50, "ExternalConnected": true],
+            powerSource: ["Power Source State": "AC Power"],
+            adapter: nil,
+            portPower: PortPowerReading(
+                sources: [
+                    PortPowerSourceReading(
+                        portNumber: 1,
+                        kind: .usbPD,
+                        advertisedOptions: [
+                            PortPowerOption(
+                                voltageVolts: 20,
+                                maximumCurrentAmps: 5,
+                                maximumPowerWatts: 100
+                            )
+                        ],
+                        selectedOption: PortPowerOption(
+                            voltageVolts: 20,
+                            maximumCurrentAmps: 5,
+                            maximumPowerWatts: 100
+                        ),
+                        connectionActive: true
+                    )
+                ],
+                sampledAt: sampledAt
+            ),
+            sampledAt: sampledAt.addingTimeInterval(PowerObservationFreshness.live + 1)
+        )
+        let battery = try XCTUnwrap(BatterySnapshot(rawData: rawData))
+
+        XCTAssertTrue(battery.offeredPowerContracts.isEmpty)
+        XCTAssertTrue(battery.negotiatedPowerContracts.isEmpty)
+    }
+}
+
+private enum TestAdapterErrorFlag {
+    static let insufficientPower = 1 << 1
+    static let needsRepositioning = 1 << 3
 }

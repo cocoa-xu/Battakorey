@@ -11,11 +11,14 @@ enum BatteryMenuItemID: String, CaseIterable, Hashable {
     case rawMaximum
     case designCapacity
     case capacityRetention
+    case maximumCapacity
+    case batteryCondition
     case cycles
     case temperature
     case voltage
     case current
     case batteryPower
+    case chargeTarget
     case systemDraw
     case cpuPower
     case gpuPower
@@ -28,12 +31,20 @@ enum BatteryMenuItemID: String, CaseIterable, Hashable {
     case powerContract
     case liveInput
     case dcInputRail
+    case pdContract
     case optimizedCharging
     case lowPowerMode
     case failureStatus
     case cellDisconnects
     case notChargingReason
     case slowChargingReason
+    case chargeInterruption
+    case adapterErrors
+    case publicHealthHint
+    case capacityEstimated
+    case batteryFailureModes
+    case thermalPressure
+    case cpuPowerLimits
     case cellVoltages
     case cellVoltageDelta
     case learnedQmax
@@ -76,7 +87,9 @@ struct BatteryMenuVisibility: Equatable {
             .timeRemaining,
             .currentCharge,
             .fullCharge,
-            .capacityRetention,
+            .maximumCapacity,
+            .batteryCondition,
+            .batteryPower,
             .cycles,
             .systemDraw,
             .adapterRating,

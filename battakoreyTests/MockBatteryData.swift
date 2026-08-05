@@ -3,7 +3,8 @@ import Foundation
 
 enum MockBatteryData {
     static var discharging: BatteryRawData {
-        BatteryRawData(
+        let sampledAt = Date(timeIntervalSince1970: 1_000)
+        return BatteryRawData(
             registry: [
                 "CurrentCapacity": 64,
                 "IsCharging": false,
@@ -71,13 +72,17 @@ enum MockBatteryData {
                 memoryWatts: 0.85,
                 gpuMemoryWatts: 0.12,
                 displayWatts: 0.7,
-                externalDisplayWatts: 1.1
-            )
+                externalDisplayWatts: 1.1,
+                sampledAt: sampledAt,
+                measurementWindow: 1
+            ),
+            sampledAt: sampledAt
         )
     }
 
     static var charging: BatteryRawData {
-        BatteryRawData(
+        let sampledAt = Date(timeIntervalSince1970: 1_000)
+        return BatteryRawData(
             registry: [
                 "CurrentCapacity": 72,
                 "IsCharging": true,
@@ -110,7 +115,35 @@ enum MockBatteryData {
                 inputVolts: 20.1,
                 inputAmps: 3.5,
                 inputWatts: 70.35
-            )
+            ),
+            systemHealth: SystemBatteryHealthReading(
+                condition: "Good",
+                maximumCapacityPercentage: 82,
+                sampledAt: sampledAt
+            ),
+            portPower: PortPowerReading(
+                sources: [
+                    PortPowerSourceReading(
+                        portNumber: 2,
+                        kind: .usbPD,
+                        advertisedOptions: [
+                            PortPowerOption(
+                                voltageVolts: 20,
+                                maximumCurrentAmps: 5,
+                                maximumPowerWatts: 100
+                            )
+                        ],
+                        selectedOption: PortPowerOption(
+                            voltageVolts: 20,
+                            maximumCurrentAmps: 4.5,
+                            maximumPowerWatts: 90
+                        ),
+                        connectionActive: true
+                    )
+                ],
+                sampledAt: sampledAt
+            ),
+            sampledAt: sampledAt
         )
     }
 }

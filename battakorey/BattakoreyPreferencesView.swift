@@ -187,7 +187,9 @@ struct BattakoreyPreferencesRoot: View {
         BatteryMenuOption(id: .fullCharge, title: "Full Charge", caption: "Current usable full-charge capacity."),
         BatteryMenuOption(id: .rawMaximum, title: "Raw Maximum", caption: "Controller estimate before macOS normalization."),
         BatteryMenuOption(id: .designCapacity, title: "Design Capacity", caption: "Original factory-rated capacity."),
-        BatteryMenuOption(id: .capacityRetention, title: "Capacity Retention", caption: "Full-charge capacity relative to design."),
+        BatteryMenuOption(id: .maximumCapacity, title: "Maximum Capacity", caption: "Maximum Capacity reported by System Information."),
+        BatteryMenuOption(id: .batteryCondition, title: "Condition", caption: "Battery condition reported by System Information."),
+        BatteryMenuOption(id: .capacityRetention, title: "Raw Capacity Ratio", caption: "Controller capacity divided by design capacity; not Apple's Maximum Capacity."),
         BatteryMenuOption(id: .cycles, title: "Cycles", caption: "Cycle count and rated cycle-life progress.")
     ]
 
@@ -195,15 +197,17 @@ struct BattakoreyPreferencesRoot: View {
         BatteryMenuOption(id: .temperature, title: "Temperature", caption: "Current pack temperature."),
         BatteryMenuOption(id: .voltage, title: "Voltage", caption: "Current pack voltage."),
         BatteryMenuOption(id: .current, title: "Current", caption: "Signed charge or discharge current."),
-        BatteryMenuOption(id: .batteryPower, title: "Battery Power", caption: "Signed power flowing through the battery."),
-        BatteryMenuOption(id: .systemDraw, title: "System Draw", caption: "Whole-system load reported by the controller.")
+        BatteryMenuOption(id: .batteryPower, title: "Battery Flow", caption: "Signed measured charge or discharge at the battery rail."),
+        BatteryMenuOption(id: .chargeTarget, title: "Controller Charge Target", caption: "Configured charging target; not a measured battery flow."),
+        BatteryMenuOption(id: .systemDraw, title: "Controller System Load", caption: "Coarse system-load estimate reported by the battery controller.")
     ]
 
     private static let adapterOptions = [
         BatteryMenuOption(id: .adapterRating, title: "Adapter Rating", caption: "Advertised adapter wattage."),
-        BatteryMenuOption(id: .powerContract, title: "Power Contract", caption: "Negotiated adapter voltage and current."),
-        BatteryMenuOption(id: .liveInput, title: "Live Input", caption: "Measured input power from AppleSMC."),
-        BatteryMenuOption(id: .dcInputRail, title: "DC Input Rail", caption: "Measured input voltage and current.")
+        BatteryMenuOption(id: .powerContract, title: "Adapter Electrical Capability", caption: "Adapter voltage and current capability; not a negotiated PD contract."),
+        BatteryMenuOption(id: .pdContract, title: "USB-C PD Contract", caption: "Selected contract joined to an active physical USB-C port."),
+        BatteryMenuOption(id: .liveInput, title: "Live Input", caption: "Measured DC input power from the SMC."),
+        BatteryMenuOption(id: .dcInputRail, title: "DC Input Rail", caption: "Measured DC input voltage and current.")
     ]
 
     private static let processorPowerOptions = [
@@ -220,8 +224,15 @@ struct BattakoreyPreferencesRoot: View {
     ]
 
     private static let diagnosticOptions = [
+        BatteryMenuOption(id: .chargeInterruption, title: "Charging Hold", caption: "Public temperature-related charge interruption reason."),
+        BatteryMenuOption(id: .adapterErrors, title: "Adapter Issues", caption: "Insufficient power, foreign-object, or placement warnings."),
+        BatteryMenuOption(id: .publicHealthHint, title: "Public Health Hint", caption: "Source-specific IOPowerSources health value."),
+        BatteryMenuOption(id: .capacityEstimated, title: "Estimated Capacity", caption: "Whether the public capacity value is estimated."),
+        BatteryMenuOption(id: .batteryFailureModes, title: "Battery Issues", caption: "Failure modes reported by the public power-source API."),
         BatteryMenuOption(id: .optimizedCharging, title: "Optimized Charging", caption: "Whether macOS charge protection is engaged."),
         BatteryMenuOption(id: .lowPowerMode, title: "Low Power Mode", caption: "Current system energy-saving state."),
+        BatteryMenuOption(id: .thermalPressure, title: "Thermal Pressure", caption: "Public process-level thermal pressure state."),
+        BatteryMenuOption(id: .cpuPowerLimits, title: "CPU Power Limits", caption: "Public CPU restrictions imposed by thermal or power constraints."),
         BatteryMenuOption(id: .failureStatus, title: "Failure Status", caption: "Permanent controller failure flags."),
         BatteryMenuOption(id: .cellDisconnects, title: "Cell Disconnects", caption: "Recorded battery cell disconnect events."),
         BatteryMenuOption(id: .notChargingReason, title: "Not Charging Reason", caption: "Raw reason flags when charging is blocked."),

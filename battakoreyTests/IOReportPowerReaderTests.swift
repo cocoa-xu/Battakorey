@@ -24,6 +24,11 @@ final class IOReportPowerReaderTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(reading.gpuMemoryWatts), 0.05, accuracy: 0.000_001)
         XCTAssertEqual(try XCTUnwrap(reading.displayWatts), 0.3, accuracy: 0.000_001)
         XCTAssertEqual(try XCTUnwrap(reading.externalDisplayWatts), 0.1, accuracy: 0.000_001)
+        XCTAssertEqual(reading.cpuPower?.kind, .estimated)
+        XCTAssertEqual(reading.cpuPower?.domain, .component)
+        XCTAssertEqual(reading.cpuPower?.source, .ioReport)
+        XCTAssertEqual(reading.cpuPower?.measurementWindow, 1.5)
+        XCTAssertEqual(reading.cpuPower?.accessTier, .enhanced)
     }
 
     func testIgnoresInvalidSamplesWithoutRejectingZeroPower() throws {
@@ -47,5 +52,20 @@ final class IOReportPowerReaderTests: XCTestCase {
         XCTAssertNil(IOReportPowerDecoder.reading(from: [], duration: 1))
         XCTAssertNil(IOReportPowerDecoder.reading(from: [sample], duration: 0))
         XCTAssertNil(IOReportPowerDecoder.reading(from: [sample], duration: .infinity))
+        XCTAssertNil(IOReportPowerDecoder.reading(from: [sample], duration: 6))
+    }
+
+    func testPrefersExplicitDieAggregatesOverDuplicateGlobalCPUChannel() throws {
+        let reading = try XCTUnwrap(IOReportPowerDecoder.reading(
+            from: [
+                IOReportEnergySample(channel: "CPU Energy", unit: "mJ", energy: 2_250),
+                IOReportEnergySample(channel: "DIE_0_CPU Energy", unit: "mJ", energy: 2_250),
+                IOReportEnergySample(channel: "DIE_1_CPU Energy", unit: "mJ", energy: 750)
+            ],
+            duration: 1.5
+        ))
+
+        XCTAssertEqual(try XCTUnwrap(reading.cpuWatts), 2, accuracy: 0.000_001)
+        XCTAssertEqual(reading.measurementWindow, 1.5)
     }
 }
