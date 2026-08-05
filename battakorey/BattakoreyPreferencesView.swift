@@ -16,6 +16,11 @@ private struct BatteryMenuOption: Identifiable {
     let caption: String
 }
 
+private enum BattakoreyPreferencesLayout {
+    static let selectionGroupWidth: CGFloat = 360
+    static let selectionSpacing: CGFloat = 6
+}
+
 struct BattakoreyPreferencesRoot: View {
     @ObservedObject var model: BatteryPreferencesModel
     @State private var selection = BattakoreyPreferencesPage.mainMenu
@@ -103,7 +108,15 @@ struct BattakoreyPreferencesRoot: View {
             icon: .system("bolt.fill")
         ) {
             SettingsPaneStack {
-                optionSection("Power Adapter", options: Self.adapterOptions)
+                SettingsSection("Power Adapter") {
+                    optionRows(Self.adapterCapabilityOptions)
+                    SettingsRowSeparator()
+                    multiSelectRow(
+                        title: "Live Measurements",
+                        caption: "Choose the measured DC input values shown in the menu.",
+                        options: Self.liveMeasurementOptions
+                    )
+                }
                 optionSection("Diagnostics", options: Self.diagnosticOptions)
             }
         }
@@ -132,11 +145,16 @@ struct BattakoreyPreferencesRoot: View {
             icon: .system("cpu")
         ) {
             SettingsPaneStack {
-                optionSection(
+                SettingsSection(
                     "Processor",
-                    options: Self.processorPowerOptions,
                     footer: "Sampled once per second through IOReport. Readings disappear gracefully when a channel is unavailable."
-                )
+                ) {
+                    multiSelectRow(
+                        title: "Visible Components",
+                        caption: "Choose the compute power estimates shown in the menu.",
+                        options: Self.processorPowerOptions
+                    )
+                }
                 optionSection("Memory & Display", options: Self.memoryDisplayPowerOptions)
             }
         }
@@ -159,20 +177,49 @@ struct BattakoreyPreferencesRoot: View {
         footer: String? = nil
     ) -> some View {
         SettingsSection(title, footer: footer) {
-            ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
-                if index > 0 {
-                    SettingsRowSeparator()
-                }
-                SettingsSwitchRow(
-                    title: option.title,
-                    caption: option.caption,
-                    isOn: Binding(
-                        get: { model.isVisible(option.id) },
-                        set: { model.setVisible($0, for: option.id) }
-                    )
-                )
-            }
+            optionRows(options)
         }
+    }
+
+    private func optionRows(_ options: [BatteryMenuOption]) -> some View {
+        ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
+            if index > 0 {
+                SettingsRowSeparator()
+            }
+            SettingsSwitchRow(
+                title: option.title,
+                caption: option.caption,
+                isOn: visibilityBinding(for: option.id)
+            )
+        }
+    }
+
+    private func multiSelectRow(
+        title: String,
+        caption: String,
+        options: [BatteryMenuOption]
+    ) -> some View {
+        SettingsRow(title: title, caption: caption) {
+            HStack(spacing: BattakoreyPreferencesLayout.selectionSpacing) {
+                ForEach(options) { option in
+                    SettingsCheckToggle(
+                        option.title,
+                        isOn: visibilityBinding(for: option.id)
+                    )
+                    .help(option.caption)
+                    .accessibilityLabel(option.title)
+                    .accessibilityHint(option.caption)
+                }
+            }
+            .frame(width: BattakoreyPreferencesLayout.selectionGroupWidth)
+        }
+    }
+
+    private func visibilityBinding(for id: BatteryMenuItemID) -> Binding<Bool> {
+        Binding(
+            get: { model.isVisible(id) },
+            set: { model.setVisible($0, for: id) }
+        )
     }
 
     private static let statusOptions = [
@@ -202,18 +249,21 @@ struct BattakoreyPreferencesRoot: View {
         BatteryMenuOption(id: .systemDraw, title: "Controller System Load", caption: "Coarse system-load estimate reported by the battery controller.")
     ]
 
-    private static let adapterOptions = [
+    private static let adapterCapabilityOptions = [
         BatteryMenuOption(id: .adapterRating, title: "Adapter Rating", caption: "Advertised adapter wattage."),
         BatteryMenuOption(id: .powerContract, title: "Adapter Electrical Capability", caption: "Adapter voltage and current capability; not a negotiated PD contract."),
-        BatteryMenuOption(id: .pdContract, title: "USB-C PD Contract", caption: "Selected contract joined to an active physical USB-C port."),
+        BatteryMenuOption(id: .pdContract, title: "USB-C PD Contract", caption: "Selected contract joined to an active physical USB-C port.")
+    ]
+
+    private static let liveMeasurementOptions = [
         BatteryMenuOption(id: .liveInput, title: "Live Input", caption: "Measured DC input power from the SMC."),
         BatteryMenuOption(id: .dcInputRail, title: "DC Input Rail", caption: "Measured DC input voltage and current.")
     ]
 
     private static let processorPowerOptions = [
-        BatteryMenuOption(id: .cpuPower, title: "CPU Power", caption: "Combined efficiency and performance core energy."),
-        BatteryMenuOption(id: .gpuPower, title: "GPU Power", caption: "Graphics processor energy-model estimate."),
-        BatteryMenuOption(id: .anePower, title: "Neural Engine Power", caption: "Apple Neural Engine activity and energy use.")
+        BatteryMenuOption(id: .cpuPower, title: "CPU", caption: "Combined efficiency and performance core energy."),
+        BatteryMenuOption(id: .gpuPower, title: "GPU", caption: "Graphics processor energy-model estimate."),
+        BatteryMenuOption(id: .anePower, title: "Neural Engine", caption: "Apple Neural Engine activity and energy use.")
     ]
 
     private static let memoryDisplayPowerOptions = [
