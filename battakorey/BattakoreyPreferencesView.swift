@@ -1,5 +1,5 @@
 import AppKit
-import FlowingDaySettings
+import FlowingDayPreferences
 import SwiftUI
 
 private enum BattakoreyPreferencesPage: Hashable {
@@ -26,64 +26,64 @@ struct BattakoreyPreferencesRoot: View {
     @State private var selection = BattakoreyPreferencesPage.mainMenu
 
     var body: some View {
-        SettingsView(
+        PreferencesView(
             selection: $selection,
-            configuration: SettingsViewConfiguration(
+            configuration: PreferencesViewConfiguration(
                 applicationName: "Battakorey",
-                settingsTitle: "Preferences",
+                preferencesTitle: "Preferences",
                 applicationIcon: NSApp.applicationIconImage,
-                defaultAccent: SettingsAccent(
-                    fill: SettingsPalette.dynamic(light: 0x8B6FC1, dark: 0xB49AE6),
-                    foreground: SettingsPalette.dynamic(light: 0x654A9D, dark: 0xC8B1F1)
+                defaultAccent: PreferencesAccent(
+                    fill: PreferencesPalette.dynamic(light: 0x8B6FC1, dark: 0xB49AE6),
+                    foreground: PreferencesPalette.dynamic(light: 0x654A9D, dark: 0xC8B1F1)
                 )
             ),
             groups: [
-                SettingsPageGroup(
+                PreferencesPageGroup(
                     id: "display",
                     title: "Menu Display",
                     pages: [mainMenuPage, chargingPage]
                 ),
-                SettingsPageGroup(
+                PreferencesPageGroup(
                     id: "advanced",
                     title: "Advanced",
                     pages: [componentPowerPage, internalsPage]
                 ),
-                SettingsPageGroup(id: "application", pages: [aboutPage])
+                PreferencesPageGroup(id: "application", pages: [aboutPage])
             ]
         )
     }
 
-    private var mainMenuPage: SettingsPage<BattakoreyPreferencesPage> {
-        SettingsPage(
+    private var mainMenuPage: PreferencesPage<BattakoreyPreferencesPage> {
+        PreferencesPage(
             id: .mainMenu,
             title: "Main Menu",
             subtitle: "Choose the battery details shown at a glance.",
             icon: .system("menubar.rectangle")
         ) {
-            SettingsPaneStack {
-                SettingsSection(
+            PreferencesPaneStack {
+                PreferencesSection(
                     "Presets",
                     footer: "Presets only change menu presentation. No battery data is collected."
                 ) {
-                    SettingsRow(
+                    PreferencesRow(
                         title: "Visible information",
                         caption: "Start focused or expose every available reading."
                     ) {
                         HStack(spacing: 8) {
                             Button("Recommended", action: model.useRecommendedItems)
-                                .buttonStyle(SettingsSoftButtonStyle(
+                                .buttonStyle(PreferencesSoftButtonStyle(
                                     isProminent: model.visibility == .recommended
                                 ))
                             Button("Show Everything", action: model.showAllItems)
-                                .buttonStyle(SettingsSoftButtonStyle(
+                                .buttonStyle(PreferencesSoftButtonStyle(
                                     isProminent: model.visibility == .all
                                 ))
                         }
                     }
                 }
 
-                SettingsSection("Layout") {
-                    SettingsSwitchRow(
+                PreferencesSection("Layout") {
+                    PreferencesSwitchRow(
                         title: "Section Titles",
                         caption: "Show category headings such as Capacity and Electrical.",
                         isOn: Binding(
@@ -100,17 +100,17 @@ struct BattakoreyPreferencesRoot: View {
         }
     }
 
-    private var chargingPage: SettingsPage<BattakoreyPreferencesPage> {
-        SettingsPage(
+    private var chargingPage: PreferencesPage<BattakoreyPreferencesPage> {
+        PreferencesPage(
             id: .charging,
             title: "Power & Charging",
             subtitle: "Control adapter and charging diagnostics.",
             icon: .system("bolt.fill")
         ) {
-            SettingsPaneStack {
-                SettingsSection("Power Adapter") {
+            PreferencesPaneStack {
+                PreferencesSection("Power Adapter") {
                     optionRows(Self.adapterCapabilityOptions)
-                    SettingsRowSeparator()
+                    PreferencesRowSeparator()
                     multiSelectRow(
                         title: "Live Measurements",
                         caption: "Choose the measured DC input values shown in the menu.",
@@ -122,27 +122,27 @@ struct BattakoreyPreferencesRoot: View {
         }
     }
 
-    private var internalsPage: SettingsPage<BattakoreyPreferencesPage> {
-        SettingsPage(
+    private var internalsPage: PreferencesPage<BattakoreyPreferencesPage> {
+        PreferencesPage(
             id: .internals,
             title: "Battery Internals",
             subtitle: "Choose controller data for the nested internals menu.",
             icon: .system("waveform.path.ecg")
         ) {
-            SettingsPaneStack {
-                SettingsSection("Cell Measurements") {
+            PreferencesPaneStack {
+                PreferencesSection("Cell Measurements") {
                     multiSelectRow(
                         title: "Voltage",
                         caption: "Choose the individual cell voltages and voltage spread shown in the menu.",
                         options: Self.cellVoltageOptions
                     )
-                    SettingsRowSeparator()
+                    PreferencesRowSeparator()
                     multiSelectRow(
                         title: "Learned Capacity",
                         caption: "Choose the learned Qmax values and capacity spread shown in the menu.",
                         options: Self.cellCapacityOptions
                     )
-                    SettingsRowSeparator()
+                    PreferencesRowSeparator()
                     multiSelectRow(
                         title: "Resistance",
                         caption: "Choose the learned resistance values and resistance spread shown in the menu.",
@@ -155,14 +155,14 @@ struct BattakoreyPreferencesRoot: View {
         }
     }
 
-    private var componentPowerPage: SettingsPage<BattakoreyPreferencesPage> {
-        SettingsPage(
+    private var componentPowerPage: PreferencesPage<BattakoreyPreferencesPage> {
+        PreferencesPage(
             id: .componentPower,
             title: "Component Power",
             subtitle: "Choose live hardware energy counters shown in the menu.",
             icon: .system("cpu")
         ) {
-            SettingsPaneStack {
+            PreferencesPaneStack {
                 multiSelectSection(
                     "Processor",
                     caption: "Choose the CPU, GPU, and Neural Engine estimates shown in the menu.",
@@ -183,8 +183,8 @@ struct BattakoreyPreferencesRoot: View {
         }
     }
 
-    private var aboutPage: SettingsPage<BattakoreyPreferencesPage> {
-        SettingsPage(
+    private var aboutPage: PreferencesPage<BattakoreyPreferencesPage> {
+        PreferencesPage(
             id: .about,
             title: "About",
             subtitle: "Version and project information.",
@@ -200,7 +200,7 @@ struct BattakoreyPreferencesRoot: View {
         options: [BatteryMenuOption],
         footer: String? = nil
     ) -> some View {
-        SettingsSection(title, footer: footer) {
+        PreferencesSection(title, footer: footer) {
             optionRows(options)
         }
     }
@@ -211,7 +211,7 @@ struct BattakoreyPreferencesRoot: View {
         options: [BatteryMenuOption],
         footer: String? = nil
     ) -> some View {
-        SettingsSection(title, footer: footer) {
+        PreferencesSection(title, footer: footer) {
             multiSelectRow(
                 title: "Visible Readings",
                 caption: caption,
@@ -223,9 +223,9 @@ struct BattakoreyPreferencesRoot: View {
     private func optionRows(_ options: [BatteryMenuOption]) -> some View {
         ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
             if index > 0 {
-                SettingsRowSeparator()
+                PreferencesRowSeparator()
             }
-            SettingsSwitchRow(
+            PreferencesSwitchRow(
                 title: option.title,
                 caption: option.caption,
                 isOn: visibilityBinding(for: option.id)
@@ -238,10 +238,10 @@ struct BattakoreyPreferencesRoot: View {
         caption: String,
         options: [BatteryMenuOption]
     ) -> some View {
-        SettingsRow(title: title, caption: caption) {
+        PreferencesRow(title: title, caption: caption) {
             HStack(spacing: BattakoreyPreferencesLayout.selectionSpacing) {
                 ForEach(options) { option in
-                    SettingsCheckToggle(
+                    PreferencesCheckToggle(
                         option.title,
                         isOn: visibilityBinding(for: option.id)
                     )
@@ -369,36 +369,36 @@ struct BattakoreyPreferencesRoot: View {
 }
 
 private struct BattakoreyAboutPane: View {
-    @Environment(\.settingsAccent) private var accent
-    @Environment(\.settingsTypography) private var typography
+    @Environment(\.preferencesAccent) private var accent
+    @Environment(\.preferencesTypography) private var typography
     let versionText: String
 
     var body: some View {
-        SettingsPaneStack {
+        PreferencesPaneStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Battakorey")
                     .font(typography.contentTitle.font)
-                    .foregroundStyle(SettingsPalette.ink)
+                    .foregroundStyle(PreferencesPalette.ink)
                 Text(versionText)
                     .font(typography.pageSubtitle.font)
-                    .foregroundStyle(SettingsPalette.faint)
+                    .foregroundStyle(PreferencesPalette.faint)
                 Text("A tiny Takodachi in your menu bar with detailed Mac battery telemetry.")
                     .font(typography.body.font)
-                    .foregroundStyle(SettingsPalette.muted)
+                    .foregroundStyle(PreferencesPalette.muted)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 4)
             }
 
-            SettingsSection("Details") {
-                SettingsValueRow(
+            PreferencesSection("Details") {
+                PreferencesValueRow(
                     title: "Battery Data",
                     value: "IOPowerSources · AppleSmartBattery · AppleSMC · IOReport"
                 )
-                SettingsRowSeparator()
-                SettingsValueRow(title: "Requirements", value: "macOS 13 or later")
+                PreferencesRowSeparator()
+                PreferencesValueRow(title: "Requirements", value: "macOS 13 or later")
             }
 
-            SettingsSection("Acknowledgements") {
+            PreferencesSection("Acknowledgements") {
                 acknowledgementRow(
                     title: "FlowingDayUI",
                     caption: "Reusable preferences windows and macOS interface components.",
@@ -408,7 +408,7 @@ private struct BattakoreyAboutPane: View {
 
             HStack(spacing: 4) {
                 Text("Copyright © 2026")
-                    .foregroundStyle(SettingsPalette.faint)
+                    .foregroundStyle(PreferencesPalette.faint)
                 Link(destination: Self.cocoaURL) {
                     Text("Cocoa")
                         .foregroundStyle(accent.foreground)
@@ -425,11 +425,11 @@ private struct BattakoreyAboutPane: View {
         caption: String,
         destination: URL
     ) -> some View {
-        SettingsRow(title: title, caption: caption) {
+        PreferencesRow(title: title, caption: caption) {
             Link(destination: destination) {
                 Text("GitHub")
             }
-            .buttonStyle(SettingsSoftButtonStyle())
+            .buttonStyle(PreferencesSoftButtonStyle())
             .help("Open \(title) on GitHub")
         }
     }
@@ -441,7 +441,7 @@ private struct BattakoreyAboutPane: View {
 @MainActor
 final class BattakoreyPreferencesWindowController {
     private let model: BatteryPreferencesModel
-    private lazy var presenter = SettingsWindowPresenter(
+    private lazy var presenter = PreferencesWindowPresenter(
         rootView: BattakoreyPreferencesRoot(model: model)
     )
 
