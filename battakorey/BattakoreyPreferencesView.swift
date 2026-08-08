@@ -17,6 +17,7 @@ private struct BatteryMenuOption: Identifiable {
 }
 
 private enum BattakoreyPreferencesLayout {
+    static let windowSize = CGSize(width: 900, height: 640)
     static let selectionGroupWidth: CGFloat = 360
     static let selectionSpacing: CGFloat = 6
 }
@@ -442,6 +443,11 @@ private struct BattakoreyAboutPane: View {
 final class BattakoreyPreferencesWindowController {
     private let model: BatteryPreferencesModel
     private lazy var presenter = PreferencesWindowPresenter(
+        configuration: PreferencesWindowConfiguration(
+            size: BattakoreyPreferencesLayout.windowSize,
+            minimumSize: BattakoreyPreferencesLayout.windowSize,
+            maximumSize: BattakoreyPreferencesLayout.windowSize
+        ),
         rootView: BattakoreyPreferencesRoot(model: model)
     )
 
