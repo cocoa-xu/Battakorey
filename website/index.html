@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#7a53ad" />
+    <meta
+      name="description"
+      content="Battakorey is a warm, detailed battery companion for your Mac menu bar."
+    />
+    <meta
+      property="og:title"
+      content="Battakorey | Your Mac battery, with personality"
+    />
+    <meta
+      property="og:description"
+      content="Live battery, charging, adapter, and component power details in a tiny Takodachi."
+    />
+    <meta property="og:url" content="https://battakorey.uwucocoa.moe/" />
+    <meta
+      property="og:image"
+      content="https://battakorey.uwucocoa.moe/og.png"
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Battakorey | Your Mac battery, with personality"
+    />
+    <meta
+      name="twitter:description"
+      content="Live battery, charging, adapter, and component power details in a tiny Takodachi."
+    />
+    <meta
+      name="twitter:image"
+      content="https://battakorey.uwucocoa.moe/og.png"
+    />
+    <link rel="canonical" href="https://battakorey.uwucocoa.moe/" />
+    <link rel="icon" href="/icon.png" />
+    <link rel="apple-touch-icon" href="/icon.png" />
+    <link rel="stylesheet" href="/styles.css" />
+    <title>Battakorey | A tiny battery companion for Mac</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav shell" aria-label="Primary navigation">
+        <a class="brand" href="#top" aria-label="Battakorey home">
+          <img src="/icon.png" alt="" width="42" height="42" />
+          <span>Battakorey</span>
+        </a>
+
+        <button
+          class="nav-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="nav-menu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+          <span class="sr-only">Toggle navigation</span>
+        </button>
+
+        <div class="nav-menu" id="nav-menu">
+          <a href="#tour">Try It Out</a>
+          <a href="#features">Features</a>
+          <a href="#privacy">Privacy</a>
+          <a
+            class="nav-action nav-github"
+            href="https://github.com/cocoa-xu/Battakorey"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="View Battakorey on GitHub"
+          >
+            <span class="nav-label">GitHub</span>
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 2C6.48 2 2 6.58 2 12.24c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49v-1.9c-2.78.62-3.37-1.21-3.37-1.21-.45-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.63.07-.63 1 .08 1.53 1.06 1.53 1.06.9 1.57 2.35 1.12 2.92.86.09-.67.35-1.12.64-1.38-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05A9.35 9.35 0 0 1 12 6.98a9.3 9.3 0 0 1 2.5.35c1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.79-4.57 5.05.36.32.68.94.68 1.9v2.79c0 .27.18.59.69.49A10.25 10.25 0 0 0 22 12.24C22 6.58 17.52 2 12 2Z"
+              />
+            </svg>
+          </a>
+          <a
+            class="nav-action nav-download"
+            href="https://github.com/cocoa-xu/Battakorey/releases/download/v2.1.0/Battakorey-Universal.dmg"
+            aria-label="Download Battakorey"
+          >
+            <span class="nav-label">Download</span>
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14" />
+            </svg>
+          </a>
+        </div>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero shell">
+        <div class="hero-copy" data-reveal>
+          <p class="eyebrow">A tiny battery companion for macOS</p>
+          <h1>Know your battery.<br /><em>Keep a little company.</em></h1>
+          <p class="hero-intro">
+            Battakorey brings honest battery, charging, and power details to
+            your menu bar, with a tiny Tako whose mood changes along with your
+            charge.
+          </p>
+          <div class="hero-actions">
+            <a
+              class="button button-primary"
+              href="https://github.com/cocoa-xu/Battakorey/releases/download/v2.1.0/Battakorey-Universal.dmg"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14" />
+              </svg>
+              Download for Mac
+            </a>
+            <a class="button button-quiet" href="#tour">
+              See What It Shows
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </a>
+          </div>
+          <ul class="hero-meta">
+            <li>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m5 12 4 4L19 6" />
+              </svg>
+              Signed &amp; notarized
+            </li>
+            <li>Universal</li>
+            <li>macOS 13+</li>
+          </ul>
+        </div>
+
+        <div class="hero-visual" data-reveal>
+          <div class="orbit orbit-one"></div>
+          <div class="orbit orbit-two"></div>
+          <div class="mascot-card">
+            <div class="mascot-halo"></div>
+            <img src="/happy.png" alt="A happy purple Battakorey" />
+            <span class="charge-pill"><i></i> Looking Happy at 88%</span>
+          </div>
+          <figure class="menu-preview">
+            <img
+              src="/Battakorey-Recommended.png"
+              alt="Battakorey menu showing battery status, capacity, system draw, and live input"
+            />
+          </figure>
+          <div class="floating-reading reading-input">
+            <span>Live Input</span>
+            <strong>42.4 W</strong>
+          </div>
+          <div class="floating-reading reading-flow">
+            <span>Battery</span>
+            <strong>Fully Charged</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="warm-strip" aria-label="Highlights">
+        <div class="shell highlight-list">
+          <span><i></i>At-a-Glance Status</span>
+          <span><i></i>Live Charging Measurements</span>
+          <span><i></i>Deep Battery Internals</span>
+          <span><i></i>No Root Required</span>
+        </div>
+      </section>
+
+      <section class="section interactive-demo" id="tour">
+        <div class="shell">
+          <div class="section-heading compact" data-reveal>
+            <p class="eyebrow">Try it before you download</p>
+            <h2>Your Mac menu bar, right here in the browser.</h2>
+            <p>
+              Open the Tako menu, explore detailed battery readings, then launch
+              the real interactive Preferences experience. Every control below
+              runs locally in this page.
+            </p>
+          </div>
+
+          <div class="demo-stage" data-reveal>
+            <section
+              class="mac-desktop"
+              data-state="idle"
+              aria-label="Interactive Battakorey macOS preview"
+            >
+              <div class="mac-menu-bar">
+                <div class="mac-menu-right">
+                  <button
+                    class="menu-bar-app"
+                    id="menu-bar-app"
+                    type="button"
+                    aria-label="Open Battakorey menu"
+                    aria-expanded="false"
+                    aria-controls="app-menu"
+                  >
+                    <img src="/happy.png" alt="" />
+                  </button>
+                  <span class="mac-battery" aria-hidden="true"><i></i></span>
+                </div>
+              </div>
+
+              <div class="demo-hint" aria-hidden="true">
+                <span>Click the Tako</span>
+              </div>
+
+              <div class="app-menu" id="app-menu" hidden>
+                <div class="app-menu-panel" id="main-menu-panel">
+                  <div class="app-menu-scroll" id="menu-readings"></div>
+                  <div class="app-menu-commands">
+                    <button
+                      id="open-internals"
+                      type="button"
+                      aria-expanded="false"
+                      aria-controls="internals-panel"
+                    >
+                      <span>Battery Internals</span><strong>›</strong>
+                    </button>
+                    <button id="open-preferences" type="button">
+                      <span>Preferences…</span><kbd>⌘ ,</kbd>
+                    </button>
+                    <button type="button">
+                      <span>Quit</span><kbd>⌘ Q</kbd>
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="app-menu app-submenu" id="internals-panel" hidden>
+                <div class="app-menu-panel">
+                  <div class="app-menu-scroll" id="internal-readings"></div>
+                </div>
+              </div>
+
+              <div
+                class="preferences-layer"
+                id="preferences-layer"
+                aria-hidden="true"
+                hidden
+              >
+                <div class="preferences-window-wrap">
+                  <button
+                    class="preferences-drag-surface"
+                    id="preferences-drag-surface"
+                    type="button"
+                    aria-label="Drag Preferences window"
+                  ></button>
+                  <div id="preferences-mount"></div>
+                </div>
+              </div>
+            </section>
+
+            <div class="demo-guide">
+              <ol>
+                <li><span>1</span>Open the Tako status item</li>
+                <li><span>2</span>Choose Preferences</li>
+                <li><span>3</span>Change what the menu shows</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section shell" id="features">
+        <div class="section-heading" data-reveal>
+          <p class="eyebrow">Made for the menu bar</p>
+          <h2>
+            The useful details are close.<br />The complicated ones stay out of
+            the way.
+          </h2>
+          <p>
+            Start with a calm, focused menu. Reveal every available reading only
+            when curiosity strikes.
+          </p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card feature-card-large" data-reveal>
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="14" rx="3" />
+                <path d="M7 9h10M7 13h7" />
+              </svg>
+            </div>
+            <p class="card-kicker">Everyday View</p>
+            <h3>Everything Important, at a Glance</h3>
+            <p>
+              Charge, status, power source, time remaining, capacity health,
+              cycles, temperature, voltage, current, and system draw, all
+              arranged for quick scanning.
+            </p>
+            <div class="mini-menu" aria-hidden="true">
+              <div><span>Battery</span><strong>88%</strong></div>
+              <div><span>Status</span><strong>Charging</strong></div>
+              <div><span>Time Remaining</span><strong>42 min</strong></div>
+              <hr />
+              <div>
+                <span>Battery Flow</span
+                ><strong class="positive">+18.7 W</strong>
+              </div>
+            </div>
+          </article>
+
+          <article class="feature-card" data-reveal>
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m13 2-8 12h7l-1 8 8-12h-7l1-8Z" />
+              </svg>
+            </div>
+            <p class="card-kicker">Charging Clarity</p>
+            <h3>See Where the Power Goes</h3>
+            <p>
+              Keep adapter rating, USB-C PD contract, live DC input, and
+              measured battery flow as distinct readings because they answer
+              different questions.
+            </p>
+          </article>
+
+          <article class="feature-card" data-reveal>
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 12h3l2-6 4 12 2-6h5" />
+              </svg>
+            </div>
+            <p class="card-kicker">Optional Depth</p>
+            <h3>Go All the Way to the Cells</h3>
+            <p>
+              Inspect cell voltage spread, learned capacity, resistance, gauge
+              history, controller counters, and lifetime extremes whenever your
+              hardware exposes them.
+            </p>
+          </article>
+
+          <article class="feature-card feature-card-wide" data-reveal>
+            <div>
+              <div class="feature-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="5" y="5" width="14" height="14" rx="2" />
+                  <path
+                    d="M9 1v4m6-4v4M9 19v4m6-4v4M1 9h4m14 0h4M1 15h4m14 0h4"
+                  />
+                </svg>
+              </div>
+              <p class="card-kicker">Component Power</p>
+              <h3>Understand the Busy Parts of Your Mac</h3>
+              <p>
+                Optional IOReport estimates for CPU, GPU, Neural Engine, memory,
+                and displays help explain sudden power draw without turning the
+                menu into a dashboard.
+              </p>
+            </div>
+            <ul class="power-bars">
+              <li>
+                <span>CPU</span><i style="--value: 72%"></i
+                ><strong>11.8 W</strong>
+              </li>
+              <li>
+                <span>GPU</span><i style="--value: 48%"></i
+                ><strong>7.4 W</strong>
+              </li>
+              <li>
+                <span>Memory</span><i style="--value: 21%"></i
+                ><strong>2.1 W</strong>
+              </li>
+              <li>
+                <span>Display</span><i style="--value: 34%"></i
+                ><strong>4.8 W</strong>
+              </li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="section personality-section">
+        <div class="shell personality-layout">
+          <div class="personality-copy" data-reveal>
+            <p class="eyebrow">A Little Emotional Intelligence</p>
+            <h2>Your charge level has a face now.</h2>
+            <p>
+              The Tako shifts color and expression as your battery runs down.
+              When you plug in, a favorite tentacle appears beside it. Useful
+              status, without another number competing for space.
+            </p>
+          </div>
+          <div class="mood-board" data-reveal>
+            <article class="mood mood-happy">
+              <img src="/happy.png" alt="Happy Battakorey" />
+              <div><strong>Happy</strong><span>70–100%</span></div>
+            </article>
+            <article class="mood mood-normal">
+              <img src="/normal.png" alt="Content Battakorey" />
+              <div><strong>Doing Fine</strong><span>40–70%</span></div>
+            </article>
+            <article class="mood mood-hungry">
+              <img src="/hungry.png" alt="Hungry Battakorey" />
+              <div><strong>Hungry</strong><span>20–40%</span></div>
+            </article>
+            <article class="mood mood-starving">
+              <img src="/starving.png" alt="Starving Battakorey" />
+              <div><strong>Starving</strong><span>0–20%</span></div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section shell detail-section" id="details">
+        <div class="detail-card" data-reveal>
+          <div class="detail-copy">
+            <p class="eyebrow light">Clear Names, Honest Boundaries</p>
+            <h2>Power is a story, not one magic number.</h2>
+            <p>
+              Battakorey keeps advertised capability, negotiated contracts,
+              measured input, battery flow, and component estimates separate.
+              Missing or implausible private readings simply disappear instead
+              of pretending to be exact.
+            </p>
+          </div>
+          <ul class="signal-stack">
+            <li>
+              <span>Adapter Rating</span><strong>140 W</strong
+              ><small>Advertised</small>
+            </li>
+            <li>
+              <span>PD Contract</span><strong>28.0 V @ 5.0 A</strong
+              ><small>Negotiated</small>
+            </li>
+            <li>
+              <span>Live Input</span><strong>42.4 W</strong
+              ><small>Measured</small>
+            </li>
+            <li>
+              <span>Battery Flow</span><strong>+18.7 W</strong
+              ><small>Measured</small>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="section shell" id="privacy">
+        <div class="section-heading compact" data-reveal>
+          <p class="eyebrow">Quiet by Design</p>
+          <h2>Your battery data stays on your Mac.</h2>
+        </div>
+        <div class="trust-grid">
+          <article data-reveal>
+            <span class="trust-number">01</span>
+            <h3>No account. No analytics.</h3>
+            <p>
+              Battakorey reads local power information and does not collect or
+              send battery data.
+            </p>
+          </article>
+          <article data-reveal>
+            <span class="trust-number">02</span>
+            <h3>No root access.</h3>
+            <p>
+              Extra telemetry does not require disabling System Integrity
+              Protection or running as root.
+            </p>
+          </article>
+          <article data-reveal>
+            <span class="trust-number">03</span>
+            <h3>Graceful when unavailable.</h3>
+            <p>
+              Private AppleSMC and IOReport readings vary by Mac. Unsupported
+              channels stay out of sight.
+            </p>
+          </article>
+        </div>
+        <p class="distribution-note" data-reveal>
+          Battakorey is intentionally not sandboxed so it can read additional
+          local telemetry. It is distributed directly, not through the Mac App
+          Store. The download is signed and notarized.
+        </p>
+      </section>
+
+      <section class="section download-section shell" id="download">
+        <div class="download-card" data-reveal>
+          <img src="/icon.png" alt="Battakorey app icon" />
+          <div>
+            <p class="eyebrow light">Ready when your battery is</p>
+            <h2>Give your menu bar a little more personality.</h2>
+            <p>
+              Version 2.1.0 · Universal for Apple silicon and Intel · Requires
+              macOS 13 or later.
+            </p>
+          </div>
+          <a
+            class="button button-light"
+            href="https://github.com/cocoa-xu/Battakorey/releases/download/v2.1.0/Battakorey-Universal.dmg"
+          >
+            Download DMG
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="shell footer-content">
+        <a class="brand" href="#top">
+          <img src="/icon.png" alt="" width="38" height="38" />
+          <span>Battakorey</span>
+        </a>
+        <p>Made with care for curious Mac users.</p>
+        <div class="footer-links">
+          <a
+            href="https://github.com/cocoa-xu/Battakorey"
+            target="_blank"
+            rel="noreferrer"
+            >Source</a
+          >
+          <a href="https://github.com/cocoa-xu/Battakorey/releases">Releases</a>
+          <span>© <span id="year">2026</span> Cocoa</span>
+        </div>
+      </div>
+    </footer>
+
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
