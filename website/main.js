@@ -642,7 +642,6 @@ internalsTrigger?.addEventListener("click", () => {
   internalsTrigger.setAttribute("aria-expanded", String(opensInternals));
   internalsTrigger.classList.toggle("is-active", opensInternals);
 });
-document.querySelector("#quit-preview")?.addEventListener("click", closeMenu);
 
 preferencesMount?.addEventListener("fd-close", closePreferences);
 preferencesMount?.addEventListener("fd-activate", (event) => {

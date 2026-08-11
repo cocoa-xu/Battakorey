@@ -1169,7 +1169,7 @@ button {
 
 .app-menu-scroll {
   min-height: 0;
-  padding: 6px 9px;
+  padding: 6px 9px 1px;
   overflow-y: auto;
   scrollbar-width: thin;
 }
@@ -1180,6 +1180,10 @@ button {
 
 .app-menu-section + .app-menu-section {
   border-top: 1px solid rgba(69, 60, 76, 0.14);
+}
+
+.app-menu-section:last-child {
+  padding-bottom: 2px;
 }
 
 .app-menu-heading {
@@ -1218,9 +1222,19 @@ button {
 }
 
 .app-menu-commands {
+  position: relative;
   flex: none;
   padding: 5px 9px 7px;
-  border-top: 1px solid rgba(69, 60, 76, 0.16);
+}
+
+.app-menu-commands::before {
+  position: absolute;
+  top: 0;
+  right: 17px;
+  left: 17px;
+  height: 1px;
+  content: "";
+  background: rgba(69, 60, 76, 0.16);
 }
 
 .app-menu-commands button {
