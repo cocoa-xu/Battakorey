@@ -1,19 +1,37 @@
 import Foundation
 
+struct HardwareProfile: Equatable {
+    let machineName: String
+
+    var isMacBook: Bool {
+        machineName == "MacBook" || machineName.hasPrefix("MacBook ")
+    }
+
+    var isDesktopMac: Bool {
+        switch machineName {
+        case "Mac mini", "Mac Studio", "Mac Pro", "iMac", "iMac Pro":
+            return true
+        default:
+            return false
+        }
+    }
+}
+
 enum HardwareProfileDecoder {
-    static func isMacBook(_ data: Data) -> Bool {
+    static func decode(_ data: Data) -> HardwareProfile? {
         guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let items = root["SPHardwareDataType"] as? [[String: Any]],
               let machineName = items.first?["machine_name"] as? String else {
-            return false
+            return nil
         }
-        return machineName == "MacBook" || machineName.hasPrefix("MacBook ")
+        return HardwareProfile(machineName: machineName)
     }
 }
 
 final class HardwareProfileReader {
     private let dataProvider: () -> Data?
-    private var cachedIsMacBook: Bool?
+    private var hasReadProfile = false
+    private var cachedProfile: HardwareProfile?
 
     init(
         timeout: TimeInterval = HardwareProfilePolicy.processTimeout,
@@ -24,13 +42,11 @@ final class HardwareProfileReader {
         }
     }
 
-    func isMacBook() -> Bool {
-        if let cachedIsMacBook {
-            return cachedIsMacBook
-        }
-        let isMacBook = dataProvider().map(HardwareProfileDecoder.isMacBook) ?? false
-        cachedIsMacBook = isMacBook
-        return isMacBook
+    func profile() -> HardwareProfile? {
+        guard !hasReadProfile else { return cachedProfile }
+        cachedProfile = dataProvider().flatMap(HardwareProfileDecoder.decode)
+        hasReadProfile = true
+        return cachedProfile
     }
 
     private static func runSystemProfiler(timeout: TimeInterval) -> Data? {

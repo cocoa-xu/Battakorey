@@ -59,10 +59,12 @@ struct BattakoreyPreferencesRoot: View {
         PreferencesPage(
             id: .mainMenu,
             title: "Main Menu",
-            subtitle: "Choose the battery details shown at a glance.",
+            subtitle: "Choose the power details shown at a glance.",
             icon: .system("menubar.rectangle")
         ) {
             PreferencesPaneStack {
+                batteryAvailabilityNotice
+
                 PreferencesSection(
                     "Presets",
                     footer: "Presets only change menu presentation. No battery data is collected."
@@ -110,6 +112,8 @@ struct BattakoreyPreferencesRoot: View {
             icon: .system("bolt.fill")
         ) {
             PreferencesPaneStack {
+                batteryAvailabilityNotice
+
                 PreferencesSection("Power Adapter") {
                     optionRows(Self.adapterCapabilityOptions)
                     PreferencesRowSeparator()
@@ -132,6 +136,8 @@ struct BattakoreyPreferencesRoot: View {
             icon: .system("waveform.path.ecg")
         ) {
             PreferencesPaneStack {
+                batteryAvailabilityNotice
+
                 PreferencesSection("Cell Measurements") {
                     multiSelectRow(
                         title: "Voltage",
@@ -232,6 +238,7 @@ struct BattakoreyPreferencesRoot: View {
                 caption: option.caption,
                 isOn: visibilityBinding(for: option.id)
             )
+            .disabled(!model.isAvailable(option.id))
         }
     }
 
@@ -247,6 +254,7 @@ struct BattakoreyPreferencesRoot: View {
                         option.title,
                         isOn: visibilityBinding(for: option.id)
                     )
+                    .disabled(!model.isAvailable(option.id))
                     .help(option.caption)
                     .accessibilityLabel(option.title)
                     .accessibilityHint(option.caption)
@@ -261,6 +269,13 @@ struct BattakoreyPreferencesRoot: View {
             get: { model.isVisible(id) },
             set: { model.setVisible($0, for: id) }
         )
+    }
+
+    @ViewBuilder
+    private var batteryAvailabilityNotice: some View {
+        if let deviceName = model.availability.batteryFreeDesktopName {
+            BatteryAvailabilityNotice(deviceName: deviceName)
+        }
     }
 
     private static let statusOptions = [
@@ -369,6 +384,51 @@ struct BattakoreyPreferencesRoot: View {
             ?? "Unknown"
         return "Version \(version)"
     }
+}
+
+private struct BatteryAvailabilityNotice: View {
+    let deviceName: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "info.circle.fill")
+                .font(.system(size: 14, weight: .semibold))
+                .padding(.top, 1)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("A small note for your \(deviceName)")
+                    .font(.callout.weight(.semibold))
+                Text("Since your \(deviceName) doesn’t have a built-in battery, battery-only options are unavailable here. System power and input readings are still available as usual.")
+                    .font(.callout)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .foregroundStyle(Self.foreground)
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Self.background)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Self.border, lineWidth: 1)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private static let background = FlowingPalette.dynamic(
+        light: 0xF4EFFB,
+        dark: 0x30283B
+    )
+    private static let foreground = FlowingPalette.dynamic(
+        light: 0x674F83,
+        dark: 0xDCCDF0
+    )
+    private static let border = FlowingPalette.dynamic(
+        light: 0xDFD2EF,
+        dark: 0x4A3D59
+    )
 }
 
 private struct BattakoreyAboutPane: View {

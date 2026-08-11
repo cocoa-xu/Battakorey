@@ -63,6 +63,88 @@ enum BatteryMenuItemID: String, CaseIterable, Hashable {
     case operatingTime
 }
 
+extension BatteryMenuItemID {
+    var requiresBattery: Bool {
+        switch self {
+        case .batteryLevel,
+             .timeRemaining,
+             .currentCharge,
+             .fullCharge,
+             .rawMaximum,
+             .designCapacity,
+             .capacityRetention,
+             .maximumCapacity,
+             .batteryCondition,
+             .cycles,
+             .temperature,
+             .voltage,
+             .current,
+             .batteryPower,
+             .chargeTarget,
+             .optimizedCharging,
+             .failureStatus,
+             .cellDisconnects,
+             .notChargingReason,
+             .slowChargingReason,
+             .chargeInterruption,
+             .publicHealthHint,
+             .capacityEstimated,
+             .batteryFailureModes,
+             .cellVoltages,
+             .cellVoltageDelta,
+             .learnedQmax,
+             .qmaxDelta,
+             .resistance,
+             .resistanceDelta,
+             .dailyChargeRange,
+             .lastGaugeRelearn,
+             .dataFlashWrites,
+             .rsenseOpenEvents,
+             .qmaxDisqualification,
+             .lifetimeTemperatures,
+             .packVoltageRange,
+             .peakCurrent,
+             .operatingTime:
+            return true
+        case .missingBatteryWarning,
+             .status,
+             .powerSource,
+             .systemDraw,
+             .cpuPower,
+             .gpuPower,
+             .anePower,
+             .memoryPower,
+             .gpuMemoryPower,
+             .displayPower,
+             .externalDisplayPower,
+             .adapterRating,
+             .powerContract,
+             .liveInput,
+             .dcInputRail,
+             .pdContract,
+             .lowPowerMode,
+             .adapterErrors,
+             .thermalPressure,
+             .cpuPowerLimits:
+            return false
+        }
+    }
+
+    var isAvailableOnBatteryFreeDesktop: Bool {
+        !requiresBattery && self != .missingBatteryWarning
+    }
+}
+
+struct BatteryMenuAvailability: Equatable {
+    let batteryFreeDesktopName: String?
+
+    static let unknown = BatteryMenuAvailability(batteryFreeDesktopName: nil)
+
+    func allows(_ itemID: BatteryMenuItemID) -> Bool {
+        batteryFreeDesktopName == nil || itemID.isAvailableOnBatteryFreeDesktop
+    }
+}
+
 struct BatteryMenuVisibility: Equatable {
     let visibleItemIDs: Set<BatteryMenuItemID>
     let showsSectionTitles: Bool
@@ -132,6 +214,7 @@ final class BatteryPreferencesModel: ObservableObject {
     static let missingBatteryWarningStorageKey = "ShowsMissingBatteryWarning"
 
     @Published private(set) var visibility: BatteryMenuVisibility
+    @Published private(set) var availability = BatteryMenuAvailability.unknown
     var onChange: ((BatteryMenuVisibility) -> Void)?
 
     private let store: BatteryPreferencesStoring
@@ -163,6 +246,19 @@ final class BatteryPreferencesModel: ObservableObject {
 
     func isVisible(_ itemID: BatteryMenuItemID) -> Bool {
         visibility.contains(itemID)
+    }
+
+    func isAvailable(_ itemID: BatteryMenuItemID) -> Bool {
+        availability.allows(itemID)
+    }
+
+    func updateAvailability(hasBattery: Bool, hardwareProfile: HardwareProfile?) {
+        let desktopName = !hasBattery && hardwareProfile?.isDesktopMac == true
+            ? hardwareProfile?.machineName
+            : nil
+        let availability = BatteryMenuAvailability(batteryFreeDesktopName: desktopName)
+        guard self.availability != availability else { return }
+        self.availability = availability
     }
 
     func setVisible(_ isVisible: Bool, for itemID: BatteryMenuItemID) {

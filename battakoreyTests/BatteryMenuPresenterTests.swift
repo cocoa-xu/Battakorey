@@ -121,7 +121,7 @@ final class BatteryMenuPresenterTests: XCTestCase {
             powerSource: [:],
             adapter: nil,
             hasBattery: false,
-            batteryIsExpected: true
+            hardwareProfile: HardwareProfile(machineName: "MacBook Pro")
         )
         let battery = try XCTUnwrap(BatterySnapshot(rawData: rawData))
 

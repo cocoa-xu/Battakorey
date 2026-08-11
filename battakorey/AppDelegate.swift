@@ -49,6 +49,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func update(with battery: BatterySnapshot) {
         latestBattery = battery
+        preferencesModel.updateAvailability(
+            hasBattery: battery.hasBattery,
+            hardwareProfile: battery.hardwareProfile
+        )
         let percentage = CGFloat(battery.statusBarChargePercentage)
         if battakorey.percentage != percentage {
             battakorey.percentage = percentage

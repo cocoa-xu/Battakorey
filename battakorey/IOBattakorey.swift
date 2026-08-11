@@ -71,7 +71,7 @@ final class IOKitBatteryInfoProvider: BatteryInfoProviding {
             powerSource: powerSource ?? [:],
             adapter: externalPowerAdapterDetails(),
             hasBattery: hasBattery,
-            batteryIsExpected: hardwareProfileReader.isMacBook(),
+            hardwareProfile: hardwareProfileReader.profile(),
             smcPower: smcPowerReader.read(at: date),
             ioReportPower: ioReportPowerReader?.read(),
             systemHealth: systemHealthReader.read(at: date),

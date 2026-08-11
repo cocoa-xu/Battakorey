@@ -5,7 +5,7 @@ struct BatteryRawData {
     let powerSource: [String: Any]
     let adapter: [String: Any]?
     let hasBattery: Bool
-    let batteryIsExpected: Bool
+    let hardwareProfile: HardwareProfile?
     let smcPower: SMCPowerReading?
     let ioReportPower: IOReportPowerReading?
     let systemHealth: SystemBatteryHealthReading?
@@ -18,7 +18,7 @@ struct BatteryRawData {
         powerSource: [String: Any],
         adapter: [String: Any]?,
         hasBattery: Bool = true,
-        batteryIsExpected: Bool = false,
+        hardwareProfile: HardwareProfile? = nil,
         smcPower: SMCPowerReading? = nil,
         ioReportPower: IOReportPowerReading? = nil,
         systemHealth: SystemBatteryHealthReading? = nil,
@@ -30,7 +30,7 @@ struct BatteryRawData {
         self.powerSource = powerSource
         self.adapter = adapter
         self.hasBattery = hasBattery
-        self.batteryIsExpected = batteryIsExpected
+        self.hardwareProfile = hardwareProfile
         self.smcPower = smcPower
         self.ioReportPower = ioReportPower
         self.systemHealth = systemHealth
@@ -113,7 +113,7 @@ struct BatterySnapshot: Equatable {
     }
 
     let hasBattery: Bool
-    let batteryIsExpected: Bool
+    let hardwareProfile: HardwareProfile?
     let chargePercentage: Int
     let isCharging: Bool
     let isFullyCharged: Bool
@@ -173,7 +173,7 @@ struct BatterySnapshot: Equatable {
     }
 
     var shouldWarnAboutMissingBattery: Bool {
-        batteryIsExpected && !hasBattery
+        hardwareProfile?.isMacBook == true && !hasBattery
     }
 
     var statusBarChargePercentage: Int {
@@ -200,7 +200,7 @@ struct BatterySnapshot: Equatable {
             ?? false
 
         self.hasBattery = rawData.hasBattery
-        self.batteryIsExpected = rawData.batteryIsExpected
+        self.hardwareProfile = rawData.hardwareProfile
         self.chargePercentage = min(
             max(reportedChargePercentage ?? 0, PowerPercentage.validRange.lowerBound),
             PowerPercentage.validRange.upperBound

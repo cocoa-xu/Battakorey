@@ -114,6 +114,52 @@ final class BatteryMenuPreferencesTests: XCTestCase {
         XCTAssertEqual(model.visibility, .recommended)
         XCTAssertFalse(model.visibility.showsSectionTitles)
     }
+
+    func testBatteryFreeDesktopDisablesOnlyBatterySpecificOptions() {
+        let model = BatteryPreferencesModel(store: MockBatteryPreferencesStore())
+
+        model.updateAvailability(
+            hasBattery: false,
+            hardwareProfile: HardwareProfile(machineName: "Mac mini")
+        )
+
+        XCTAssertEqual(model.availability.batteryFreeDesktopName, "Mac mini")
+        XCTAssertFalse(model.isAvailable(.missingBatteryWarning))
+        XCTAssertFalse(model.isAvailable(.batteryLevel))
+        XCTAssertFalse(model.isAvailable(.cycles))
+        XCTAssertFalse(model.isAvailable(.cellVoltages))
+        XCTAssertTrue(model.isAvailable(.status))
+        XCTAssertTrue(model.isAvailable(.systemDraw))
+        XCTAssertTrue(model.isAvailable(.adapterRating))
+        XCTAssertTrue(model.isAvailable(.liveInput))
+        XCTAssertTrue(model.isAvailable(.cpuPower))
+    }
+
+    func testBatteryOrUnrecognizedHardwareKeepsPreferencesAvailable() {
+        let model = BatteryPreferencesModel(store: MockBatteryPreferencesStore())
+
+        model.updateAvailability(
+            hasBattery: false,
+            hardwareProfile: HardwareProfile(machineName: "Future Mac")
+        )
+        XCTAssertNil(model.availability.batteryFreeDesktopName)
+        XCTAssertTrue(model.isAvailable(.batteryLevel))
+
+        model.updateAvailability(
+            hasBattery: false,
+            hardwareProfile: HardwareProfile(machineName: "MacBook Pro")
+        )
+        XCTAssertNil(model.availability.batteryFreeDesktopName)
+        XCTAssertTrue(model.isAvailable(.missingBatteryWarning))
+        XCTAssertTrue(model.isAvailable(.batteryLevel))
+
+        model.updateAvailability(
+            hasBattery: true,
+            hardwareProfile: HardwareProfile(machineName: "Mac mini")
+        )
+        XCTAssertNil(model.availability.batteryFreeDesktopName)
+        XCTAssertTrue(model.isAvailable(.batteryLevel))
+    }
 }
 
 private final class MockBatteryPreferencesStore: BatteryPreferencesStoring {

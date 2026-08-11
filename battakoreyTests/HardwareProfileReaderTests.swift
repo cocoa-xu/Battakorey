@@ -3,16 +3,28 @@ import XCTest
 
 final class HardwareProfileReaderTests: XCTestCase {
     func testRecognizesMacBookFamilyNames() {
-        XCTAssertTrue(HardwareProfileDecoder.isMacBook(profile(machineName: "MacBook Air")))
-        XCTAssertTrue(HardwareProfileDecoder.isMacBook(profile(machineName: "MacBook Pro")))
-        XCTAssertTrue(HardwareProfileDecoder.isMacBook(profile(machineName: "MacBook")))
+        XCTAssertTrue(decodedProfile(machineName: "MacBook Air")?.isMacBook == true)
+        XCTAssertTrue(decodedProfile(machineName: "MacBook Pro")?.isMacBook == true)
+        XCTAssertTrue(decodedProfile(machineName: "MacBook")?.isMacBook == true)
     }
 
-    func testDoesNotTreatDesktopOrUnknownProfilesAsMacBooks() {
-        XCTAssertFalse(HardwareProfileDecoder.isMacBook(profile(machineName: "Mac mini")))
-        XCTAssertFalse(HardwareProfileDecoder.isMacBook(profile(machineName: "Mac Studio")))
-        XCTAssertFalse(HardwareProfileDecoder.isMacBook(profile(machineName: "iMac")))
-        XCTAssertFalse(HardwareProfileDecoder.isMacBook(Data("{}".utf8)))
+    func testRecognizesDesktopMacNames() {
+        let names = ["Mac mini", "Mac Studio", "Mac Pro", "iMac", "iMac Pro"]
+
+        for name in names {
+            let profile = decodedProfile(machineName: name)
+            XCTAssertEqual(profile?.machineName, name)
+            XCTAssertTrue(profile?.isDesktopMac == true)
+            XCTAssertFalse(profile?.isMacBook == true)
+        }
+    }
+
+    func testDoesNotClassifyUnknownProfiles() {
+        let unknown = decodedProfile(machineName: "Future Mac")
+
+        XCTAssertFalse(unknown?.isMacBook == true)
+        XCTAssertFalse(unknown?.isDesktopMac == true)
+        XCTAssertNil(HardwareProfileDecoder.decode(Data("{}".utf8)))
     }
 
     func testReaderCachesHardwareProfile() {
@@ -22,9 +34,25 @@ final class HardwareProfileReaderTests: XCTestCase {
             return self.profile(machineName: "MacBook Pro")
         }
 
-        XCTAssertTrue(reader.isMacBook())
-        XCTAssertTrue(reader.isMacBook())
+        XCTAssertEqual(reader.profile(), HardwareProfile(machineName: "MacBook Pro"))
+        XCTAssertEqual(reader.profile(), HardwareProfile(machineName: "MacBook Pro"))
         XCTAssertEqual(readCount, 1)
+    }
+
+    func testReaderCachesAnUnavailableProfile() {
+        var readCount = 0
+        let reader = HardwareProfileReader {
+            readCount += 1
+            return nil
+        }
+
+        XCTAssertNil(reader.profile())
+        XCTAssertNil(reader.profile())
+        XCTAssertEqual(readCount, 1)
+    }
+
+    private func decodedProfile(machineName: String) -> HardwareProfile? {
+        HardwareProfileDecoder.decode(profile(machineName: machineName))
     }
 
     private func profile(machineName: String) -> Data {
