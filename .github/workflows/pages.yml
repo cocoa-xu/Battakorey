@@ -6,7 +6,13 @@ on:
       - main
     paths:
       - '.github/workflows/pages.yml'
-      - 'assets/**'
+      - 'assets/Battakorey-Recommended.png'
+      - 'assets/happy.png'
+      - 'assets/hungry.png'
+      - 'assets/icon.png'
+      - 'assets/normal.png'
+      - 'assets/og.png'
+      - 'assets/starving.png'
       - 'website/**'
   workflow_dispatch:
 
