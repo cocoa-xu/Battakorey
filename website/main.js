@@ -547,9 +547,23 @@ const renderMenuRows = (sections) => {
     .join("");
 };
 
+const hasVisibleReadings = (sections) =>
+  sections.some((section) =>
+    section.rows.some(([id]) => visibleItemIds.has(id)),
+  );
+
 const renderMenu = () => {
   if (menuReadings) menuReadings.innerHTML = renderMenuRows(menuSections);
-  if (internalReadings) {
+  const showsInternals = hasVisibleReadings(internalSections);
+  if (internalsTrigger) internalsTrigger.hidden = !showsInternals;
+
+  if (!showsInternals) {
+    if (internalsPanel) internalsPanel.hidden = true;
+    internalsTrigger?.setAttribute("aria-expanded", "false");
+    internalsTrigger?.classList.remove("is-active");
+  }
+
+  if (internalReadings && showsInternals) {
     internalReadings.innerHTML = renderMenuRows(internalSections);
   }
 };

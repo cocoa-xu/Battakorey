@@ -15,7 +15,8 @@
   --purple-300: #c8a5e7;
   --purple-200: #dec8f0;
   --purple-100: #f0e7f8;
-  --menu-highlight: #d76ba4;
+  --menu-highlight: var(--purple-100);
+  --menu-highlight-text: var(--purple-800);
   --lilac: #dca9ea;
   --peach: #f4cbb8;
   --green: #5f947b;
@@ -1240,7 +1241,7 @@ button {
 .app-menu-commands button:hover,
 .app-menu-commands button:focus-visible,
 .app-menu-commands button.is-active {
-  color: #fff;
+  color: var(--menu-highlight-text);
   outline: 0;
   background: var(--menu-highlight);
 }
@@ -1257,7 +1258,7 @@ button {
 .app-menu-commands button:hover kbd,
 .app-menu-commands button:focus-visible kbd,
 .app-menu-commands button.is-active kbd {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--purple-600);
 }
 
 .app-submenu {
