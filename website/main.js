@@ -4,7 +4,7 @@ import "@flowing-day/ui/theme.css";
 document.documentElement.classList.add("js");
 
 const PREFERENCES_SIZE = Object.freeze({ width: 900, height: 640 });
-const PREFERENCES_INSET = Object.freeze({ horizontal: 56, vertical: 88 });
+const PREFERENCES_INSET = Object.freeze({ horizontal: 56, vertical: 40 });
 
 const menuOptions = {
   status: [
@@ -241,8 +241,8 @@ const navMenu = document.querySelector(".nav-menu");
 const macDesktop = document.querySelector(".mac-desktop");
 const menuTrigger = document.querySelector("#menu-bar-app");
 const appMenu = document.querySelector("#app-menu");
-const mainMenuPanel = document.querySelector("#main-menu-panel");
 const internalsPanel = document.querySelector("#internals-panel");
+const internalsTrigger = document.querySelector("#open-internals");
 const menuReadings = document.querySelector("#menu-readings");
 const internalReadings = document.querySelector("#internal-readings");
 const preferencesLayer = document.querySelector("#preferences-layer");
@@ -558,8 +558,9 @@ const closeMenu = () => {
   appMenu.hidden = true;
   menuTrigger.setAttribute("aria-expanded", "false");
   macDesktop.dataset.state = preferencesLayer?.hidden ? "idle" : "preferences";
-  if (mainMenuPanel) mainMenuPanel.hidden = false;
   if (internalsPanel) internalsPanel.hidden = true;
+  internalsTrigger?.setAttribute("aria-expanded", "false");
+  internalsTrigger?.classList.remove("is-active");
 };
 
 const openMenu = () => {
@@ -604,22 +605,14 @@ menuTrigger?.addEventListener("click", () => {
 });
 
 document.querySelector("#open-preferences")?.addEventListener("click", openPreferences);
-document.querySelector("#open-internals")?.addEventListener("click", () => {
-  if (mainMenuPanel) mainMenuPanel.hidden = true;
-  if (internalsPanel) internalsPanel.hidden = false;
-});
-document.querySelector("#close-internals")?.addEventListener("click", () => {
-  if (mainMenuPanel) mainMenuPanel.hidden = false;
-  if (internalsPanel) internalsPanel.hidden = true;
+internalsTrigger?.addEventListener("click", () => {
+  if (!internalsPanel) return;
+  const opensInternals = internalsPanel.hidden;
+  internalsPanel.hidden = !opensInternals;
+  internalsTrigger.setAttribute("aria-expanded", String(opensInternals));
+  internalsTrigger.classList.toggle("is-active", opensInternals);
 });
 document.querySelector("#quit-preview")?.addEventListener("click", closeMenu);
-document.querySelector("#reset-demo")?.addEventListener("click", () => {
-  applyPreset("recommended");
-  preferencesPosition = { x: 0, y: 0 };
-  updatePreferencesPosition();
-  closePreferences();
-  closeMenu();
-});
 
 preferencesMount?.addEventListener("fd-close", closePreferences);
 preferencesMount?.addEventListener("fd-activate", (event) => {

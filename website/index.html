@@ -188,7 +188,12 @@
                 <div class="app-menu-panel" id="main-menu-panel">
                   <div class="app-menu-scroll" id="menu-readings"></div>
                   <div class="app-menu-commands">
-                    <button id="open-internals" type="button">
+                    <button
+                      id="open-internals"
+                      type="button"
+                      aria-expanded="false"
+                      aria-controls="internals-panel"
+                    >
                       <span>Battery Internals</span><strong>›</strong>
                     </button>
                     <button id="open-preferences" type="button">
@@ -200,10 +205,10 @@
                   </div>
                 </div>
 
-                <div class="app-menu-panel" id="internals-panel" hidden>
-                  <button class="app-menu-back" id="close-internals" type="button">
-                    <strong>‹</strong><span>Battery Internals</span>
-                  </button>
+              </div>
+
+              <div class="app-menu app-submenu" id="internals-panel" hidden>
+                <div class="app-menu-panel">
                   <div class="app-menu-scroll" id="internal-readings"></div>
                 </div>
               </div>
@@ -232,7 +237,6 @@
                 <li><span>2</span>Choose Preferences</li>
                 <li><span>3</span>Change what the menu shows</li>
               </ol>
-              <button id="reset-demo" type="button">Reset Preview</button>
             </div>
           </div>
         </div>

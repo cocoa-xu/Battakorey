@@ -15,6 +15,7 @@
   --purple-300: #c8a5e7;
   --purple-200: #dec8f0;
   --purple-100: #f0e7f8;
+  --menu-highlight: #d76ba4;
   --lilac: #dca9ea;
   --peach: #f4cbb8;
   --green: #5f947b;
@@ -1006,7 +1007,7 @@ button {
 .demo-hint::before {
   position: absolute;
   top: -5px;
-  right: 17px;
+  right: 47px;
   width: 10px;
   height: 10px;
   content: "";
@@ -1033,7 +1034,9 @@ button {
   background: rgba(239, 237, 240, 0.86);
   box-shadow: 0 20px 55px rgba(40, 28, 48, 0.3);
   backdrop-filter: blur(38px) saturate(1.5);
+  cursor: default;
   font-size: 13px;
+  user-select: none;
 }
 
 .app-menu-panel {
@@ -1082,7 +1085,7 @@ button {
 
 .app-menu-row strong {
   color: rgba(51, 47, 54, 0.7);
-  font-weight: 520;
+  font-weight: 400;
   text-align: right;
 }
 
@@ -1098,8 +1101,7 @@ button {
   border-top: 1px solid rgba(69, 60, 76, 0.16);
 }
 
-.app-menu-commands button,
-.app-menu-back {
+.app-menu-commands button {
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
@@ -1116,11 +1118,10 @@ button {
 
 .app-menu-commands button:hover,
 .app-menu-commands button:focus-visible,
-.app-menu-back:hover,
-.app-menu-back:focus-visible {
+.app-menu-commands button.is-active {
   color: #fff;
   outline: 0;
-  background: var(--purple-700);
+  background: var(--menu-highlight);
 }
 
 .app-menu-commands button + button {
@@ -1133,22 +1134,17 @@ button {
 }
 
 .app-menu-commands button:hover kbd,
-.app-menu-commands button:focus-visible kbd {
+.app-menu-commands button:focus-visible kbd,
+.app-menu-commands button.is-active kbd {
   color: rgba(255, 255, 255, 0.72);
 }
 
-.app-menu-back {
-  grid-template-columns: auto 1fr;
-  gap: 8px;
-  flex: none;
-  width: calc(100% - 18px);
-  margin: 7px 9px 0;
-  border-bottom: 1px solid rgba(69, 60, 76, 0.13);
-}
-
-.app-menu-back strong {
-  font-size: 19px;
-  font-weight: 420;
+.app-submenu {
+  top: auto;
+  right: 408px;
+  bottom: 9px;
+  z-index: 24;
+  width: min(360px, calc(100% - 24px));
 }
 
 .preferences-layer {
@@ -1197,11 +1193,30 @@ button {
 
 #preferences-mount fd-preferences-window {
   --fd-accent: #8b6fc1;
+  --fd-surface-field: #ecece8;
   --fd-preferences-min-width: 900px;
   --fd-preferences-min-height: 640px;
   --fd-preferences-max-width: 900px;
   --fd-preferences-max-height: 640px;
   box-shadow: 0 28px 80px rgba(39, 27, 47, 0.34);
+}
+
+#preferences-mount fd-preferences-window::part(content) {
+  scrollbar-color: rgba(76, 75, 72, 0.72) transparent;
+  scrollbar-width: thin;
+}
+
+#preferences-mount fd-preferences-window::part(content)::-webkit-scrollbar {
+  width: 8px;
+}
+
+#preferences-mount fd-preferences-window::part(content)::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#preferences-mount fd-preferences-window::part(content)::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(76, 75, 72, 0.72);
 }
 
 .preference-actions {
@@ -1252,7 +1267,7 @@ button {
 .demo-guide {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 20px;
   min-height: 58px;
   padding: 10px 18px;
@@ -1288,22 +1303,6 @@ button {
   background: var(--purple-100);
   font-size: 9px;
   font-weight: 780;
-}
-
-#reset-demo {
-  flex: none;
-  padding: 9px 13px;
-  color: var(--purple-700);
-  border: 1px solid rgba(104, 65, 143, 0.14);
-  border-radius: 999px;
-  background: #fff;
-  cursor: pointer;
-  font-size: 10px;
-  font-weight: 720;
-}
-
-#reset-demo:hover {
-  background: var(--purple-100);
 }
 
 .detail-section {
@@ -1806,6 +1805,14 @@ button {
     right: 7px;
     width: calc(100% - 14px);
     max-height: calc(100% - 48px);
+  }
+
+  .app-submenu {
+    top: auto;
+    right: auto;
+    bottom: 7px;
+    left: 7px;
+    z-index: 26;
   }
 
   .app-menu-panel {
