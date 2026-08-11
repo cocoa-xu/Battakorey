@@ -1,0 +1,16 @@
+{
+  "name": "battakorey-website",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "validate": "html-validate index.html"
+  },
+  "devDependencies": {
+    "html-validate": "^10.17.0",
+    "vite": "^8.2.1"
+  }
+}

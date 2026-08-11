@@ -3,6 +3,7 @@ xcuserdata/
 build/
 dist/
 DerivedData/
+node_modules/
 *.pbxuser
 *.xcodeproj/
 .battakorey-signing.local
