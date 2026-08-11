@@ -230,10 +230,13 @@ button {
 }
 
 .nav-action .nav-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
   width: 18px;
   height: 18px;
   opacity: 0;
-  transform: scale(0.72);
+  transform: translate(-50%, -50%) scale(0.72);
 }
 
 .nav-github {
@@ -271,8 +274,8 @@ button {
   }
 
   .site-header.is-condensed .nav-action {
-    width: 38px;
-    height: 38px;
+    width: 34px;
+    height: 34px;
     padding: 0;
     border-radius: 50%;
   }
@@ -284,7 +287,25 @@ button {
 
   .site-header.is-condensed .nav-action .nav-icon {
     opacity: 1;
-    transform: none;
+    transform: translate(-50%, -50%);
+  }
+
+  .site-header.is-condensed .nav-download {
+    width: 32px;
+    height: 32px;
+    color: var(--purple-700);
+    background: var(--purple-100);
+    box-shadow: none;
+  }
+
+  .site-header.is-condensed .nav-download .nav-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .site-header.is-condensed .nav-download:hover {
+    color: var(--purple-800);
+    background: var(--purple-200);
   }
 }
 
