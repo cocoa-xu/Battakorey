@@ -585,7 +585,12 @@ final class BattakoreyPreferencesWindowController {
         self.model = model
     }
 
+    var window: NSWindow {
+        presenter.window
+    }
+
     func show() {
         presenter.show()
+        presenter.window.makeFirstResponder(nil)
     }
 }
