@@ -115,6 +115,34 @@ final class BatteryMenuPresenterTests: XCTestCase {
         XCTAssertTrue(presenter.detailSections(for: battery).isEmpty)
     }
 
+    func testDoesNotRetainEmptySectionsAfterFilteringBatteryOnlyRows() throws {
+        let rawData = BatteryRawData(
+            registry: [
+                "BatteryInstalled": false,
+                "ExternalConnected": true,
+                "CurrentCapacity": 0,
+                "CycleCount": 0,
+                "BatteryData": ["CellVoltage": [4_100, 4_095]]
+            ],
+            powerSource: [:],
+            adapter: nil,
+            hasBattery: false
+        )
+        let battery = try XCTUnwrap(BatterySnapshot(rawData: rawData))
+        let batteryOnlyVisibility = BatteryMenuVisibility(
+            visibleItemIDs: [.batteryLevel, .cycles, .cellVoltages]
+        )
+
+        XCTAssertTrue(presenter.sections(
+            for: battery,
+            visibility: batteryOnlyVisibility
+        ).isEmpty)
+        XCTAssertTrue(presenter.detailSections(
+            for: battery,
+            visibility: batteryOnlyVisibility
+        ).isEmpty)
+    }
+
     func testMissingBatteryWarningCanBeHiddenOnConfirmedMacBook() throws {
         let rawData = BatteryRawData(
             registry: ["ExternalConnected": true],

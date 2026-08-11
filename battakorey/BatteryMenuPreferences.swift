@@ -140,7 +140,7 @@ struct BatteryMenuAvailability: Equatable {
 
     static let unknown = BatteryMenuAvailability(batteryFreeDesktopName: nil)
 
-    func allows(_ itemID: BatteryMenuItemID) -> Bool {
+    func showsByDefault(_ itemID: BatteryMenuItemID) -> Bool {
         batteryFreeDesktopName == nil || itemID.isAvailableOnBatteryFreeDesktop
     }
 }
@@ -215,6 +215,7 @@ final class BatteryPreferencesModel: ObservableObject {
 
     @Published private(set) var visibility: BatteryMenuVisibility
     @Published private(set) var availability = BatteryMenuAvailability.unknown
+    @Published private(set) var showsBatteryOnlyPreferences = false
     var onChange: ((BatteryMenuVisibility) -> Void)?
 
     private let store: BatteryPreferencesStoring
@@ -248,8 +249,13 @@ final class BatteryPreferencesModel: ObservableObject {
         visibility.contains(itemID)
     }
 
-    func isAvailable(_ itemID: BatteryMenuItemID) -> Bool {
-        availability.allows(itemID)
+    func showsPreference(_ itemID: BatteryMenuItemID) -> Bool {
+        showsBatteryOnlyPreferences || availability.showsByDefault(itemID)
+    }
+
+    func setShowsBatteryOnlyPreferences(_ showsBatteryOnlyPreferences: Bool) {
+        guard self.showsBatteryOnlyPreferences != showsBatteryOnlyPreferences else { return }
+        self.showsBatteryOnlyPreferences = showsBatteryOnlyPreferences
     }
 
     func updateAvailability(hasBattery: Bool, hardwareProfile: HardwareProfile?) {
@@ -259,6 +265,9 @@ final class BatteryPreferencesModel: ObservableObject {
         let availability = BatteryMenuAvailability(batteryFreeDesktopName: desktopName)
         guard self.availability != availability else { return }
         self.availability = availability
+        if desktopName != nil {
+            showsBatteryOnlyPreferences = false
+        }
     }
 
     func setVisible(_ isVisible: Bool, for itemID: BatteryMenuItemID) {

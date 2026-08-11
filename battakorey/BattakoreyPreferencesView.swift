@@ -138,24 +138,26 @@ struct BattakoreyPreferencesRoot: View {
             PreferencesPaneStack {
                 batteryAvailabilityNotice
 
-                PreferencesSection("Cell Measurements") {
-                    multiSelectRow(
-                        title: "Voltage",
-                        caption: "Choose the individual cell voltages and voltage spread shown in the menu.",
-                        options: Self.cellVoltageOptions
-                    )
-                    PreferencesRowSeparator()
-                    multiSelectRow(
-                        title: "Learned Capacity",
-                        caption: "Choose the learned Qmax values and capacity spread shown in the menu.",
-                        options: Self.cellCapacityOptions
-                    )
-                    PreferencesRowSeparator()
-                    multiSelectRow(
-                        title: "Resistance",
-                        caption: "Choose the learned resistance values and resistance spread shown in the menu.",
-                        options: Self.cellResistanceOptions
-                    )
+                if displaysAny(Self.cellMeasurementOptions) {
+                    PreferencesSection("Cell Measurements") {
+                        multiSelectRow(
+                            title: "Voltage",
+                            caption: "Choose the individual cell voltages and voltage spread shown in the menu.",
+                            options: Self.cellVoltageOptions
+                        )
+                        PreferencesRowSeparator()
+                        multiSelectRow(
+                            title: "Learned Capacity",
+                            caption: "Choose the learned Qmax values and capacity spread shown in the menu.",
+                            options: Self.cellCapacityOptions
+                        )
+                        PreferencesRowSeparator()
+                        multiSelectRow(
+                            title: "Resistance",
+                            caption: "Choose the learned resistance values and resistance spread shown in the menu.",
+                            options: Self.cellResistanceOptions
+                        )
+                    }
                 }
                 optionSection("Gauge History", options: Self.gaugeOptions)
                 optionSection("Lifetime", options: Self.lifetimeOptions)
@@ -203,33 +205,42 @@ struct BattakoreyPreferencesRoot: View {
         }
     }
 
+    @ViewBuilder
     private func optionSection(
         _ title: String,
         options: [BatteryMenuOption],
         footer: String? = nil
     ) -> some View {
-        PreferencesSection(title, footer: footer) {
-            optionRows(options)
+        let displayedOptions = displayedOptions(options)
+        if !displayedOptions.isEmpty {
+            PreferencesSection(title, footer: footer) {
+                optionRows(displayedOptions)
+            }
         }
     }
 
+    @ViewBuilder
     private func multiSelectSection(
         _ title: String,
         caption: String,
         options: [BatteryMenuOption],
         footer: String? = nil
     ) -> some View {
-        PreferencesSection(title, footer: footer) {
-            multiSelectRow(
-                title: "Visible Readings",
-                caption: caption,
-                options: options
-            )
+        let displayedOptions = displayedOptions(options)
+        if !displayedOptions.isEmpty {
+            PreferencesSection(title, footer: footer) {
+                multiSelectRow(
+                    title: "Visible Readings",
+                    caption: caption,
+                    options: displayedOptions
+                )
+            }
         }
     }
 
     private func optionRows(_ options: [BatteryMenuOption]) -> some View {
-        ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
+        let displayedOptions = displayedOptions(options)
+        return ForEach(Array(displayedOptions.enumerated()), id: \.element.id) { index, option in
             if index > 0 {
                 PreferencesRowSeparator()
             }
@@ -238,30 +249,40 @@ struct BattakoreyPreferencesRoot: View {
                 caption: option.caption,
                 isOn: visibilityBinding(for: option.id)
             )
-            .disabled(!model.isAvailable(option.id))
         }
     }
 
+    @ViewBuilder
     private func multiSelectRow(
         title: String,
         caption: String,
         options: [BatteryMenuOption]
     ) -> some View {
-        PreferencesRow(title: title, caption: caption) {
-            HStack(spacing: BattakoreyPreferencesLayout.selectionSpacing) {
-                ForEach(options) { option in
-                    PreferencesCheckToggle(
-                        option.title,
-                        isOn: visibilityBinding(for: option.id)
-                    )
-                    .disabled(!model.isAvailable(option.id))
-                    .help(option.caption)
-                    .accessibilityLabel(option.title)
-                    .accessibilityHint(option.caption)
+        let displayedOptions = displayedOptions(options)
+        if !displayedOptions.isEmpty {
+            PreferencesRow(title: title, caption: caption) {
+                HStack(spacing: BattakoreyPreferencesLayout.selectionSpacing) {
+                    ForEach(displayedOptions) { option in
+                        PreferencesCheckToggle(
+                            option.title,
+                            isOn: visibilityBinding(for: option.id)
+                        )
+                        .help(option.caption)
+                        .accessibilityLabel(option.title)
+                        .accessibilityHint(option.caption)
+                    }
                 }
+                .frame(width: BattakoreyPreferencesLayout.selectionGroupWidth)
             }
-            .frame(width: BattakoreyPreferencesLayout.selectionGroupWidth)
         }
+    }
+
+    private func displayedOptions(_ options: [BatteryMenuOption]) -> [BatteryMenuOption] {
+        options.filter { model.showsPreference($0.id) }
+    }
+
+    private func displaysAny(_ options: [BatteryMenuOption]) -> Bool {
+        !displayedOptions(options).isEmpty
     }
 
     private func visibilityBinding(for id: BatteryMenuItemID) -> Binding<Bool> {
@@ -274,7 +295,11 @@ struct BattakoreyPreferencesRoot: View {
     @ViewBuilder
     private var batteryAvailabilityNotice: some View {
         if let deviceName = model.availability.batteryFreeDesktopName {
-            BatteryAvailabilityNotice(deviceName: deviceName)
+            BatteryAvailabilityNotice(
+                deviceName: deviceName,
+                showsAllOptions: model.showsBatteryOnlyPreferences,
+                setShowsAllOptions: model.setShowsBatteryOnlyPreferences
+            )
         }
     }
 
@@ -364,6 +389,10 @@ struct BattakoreyPreferencesRoot: View {
         BatteryMenuOption(id: .resistanceDelta, title: "Resistance Delta", caption: "Spread between resistance values.")
     ]
 
+    private static let cellMeasurementOptions = cellVoltageOptions
+        + cellCapacityOptions
+        + cellResistanceOptions
+
     private static let gaugeOptions = [
         BatteryMenuOption(id: .dailyChargeRange, title: "Daily Charge Range", caption: "Lowest and highest state of charge today."),
         BatteryMenuOption(id: .lastGaugeRelearn, title: "Last Gauge Relearn", caption: "Cycle count at the last Qmax calibration."),
@@ -388,19 +417,31 @@ struct BattakoreyPreferencesRoot: View {
 
 private struct BatteryAvailabilityNotice: View {
     let deviceName: String
+    let showsAllOptions: Bool
+    let setShowsAllOptions: (Bool) -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "info.circle.fill")
-                .font(.system(size: 14, weight: .semibold))
-                .padding(.top, 1)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "info.circle.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .padding(.top, 1)
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text("A small note for your \(deviceName)")
-                    .font(.callout.weight(.semibold))
-                Text("Since your \(deviceName) doesn’t have a built-in battery, battery-only options are unavailable here. System power and input readings are still available as usual.")
-                    .font(.callout)
-                    .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("A small note for your \(deviceName)")
+                        .font(.callout.weight(.semibold))
+                    Text("Since your \(deviceName) doesn’t have a built-in battery, battery-only options are hidden by default. System power and input readings are still available as usual.")
+                        .font(.callout)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            HStack {
+                Spacer()
+                Button(showsAllOptions ? "Hide Battery Options" : "Show All") {
+                    setShowsAllOptions(!showsAllOptions)
+                }
+                .buttonStyle(FlowingSoftButtonStyle())
             }
         }
         .foregroundStyle(Self.foreground)
@@ -414,7 +455,7 @@ private struct BatteryAvailabilityNotice: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(Self.border, lineWidth: 1)
         }
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
     }
 
     private static let background = FlowingPalette.dynamic(

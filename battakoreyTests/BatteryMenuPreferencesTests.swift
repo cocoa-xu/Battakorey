@@ -115,7 +115,7 @@ final class BatteryMenuPreferencesTests: XCTestCase {
         XCTAssertFalse(model.visibility.showsSectionTitles)
     }
 
-    func testBatteryFreeDesktopDisablesOnlyBatterySpecificOptions() {
+    func testBatteryFreeDesktopHidesOnlyBatterySpecificOptionsByDefault() {
         let model = BatteryPreferencesModel(store: MockBatteryPreferencesStore())
 
         model.updateAvailability(
@@ -124,15 +124,30 @@ final class BatteryMenuPreferencesTests: XCTestCase {
         )
 
         XCTAssertEqual(model.availability.batteryFreeDesktopName, "Mac mini")
-        XCTAssertFalse(model.isAvailable(.missingBatteryWarning))
-        XCTAssertFalse(model.isAvailable(.batteryLevel))
-        XCTAssertFalse(model.isAvailable(.cycles))
-        XCTAssertFalse(model.isAvailable(.cellVoltages))
-        XCTAssertTrue(model.isAvailable(.status))
-        XCTAssertTrue(model.isAvailable(.systemDraw))
-        XCTAssertTrue(model.isAvailable(.adapterRating))
-        XCTAssertTrue(model.isAvailable(.liveInput))
-        XCTAssertTrue(model.isAvailable(.cpuPower))
+        XCTAssertFalse(model.showsPreference(.missingBatteryWarning))
+        XCTAssertFalse(model.showsPreference(.batteryLevel))
+        XCTAssertFalse(model.showsPreference(.cycles))
+        XCTAssertFalse(model.showsPreference(.cellVoltages))
+        XCTAssertTrue(model.showsPreference(.status))
+        XCTAssertTrue(model.showsPreference(.systemDraw))
+        XCTAssertTrue(model.showsPreference(.adapterRating))
+        XCTAssertTrue(model.showsPreference(.liveInput))
+        XCTAssertTrue(model.showsPreference(.cpuPower))
+
+        model.setShowsBatteryOnlyPreferences(true)
+
+        XCTAssertTrue(model.showsPreference(.missingBatteryWarning))
+        XCTAssertTrue(model.showsPreference(.batteryLevel))
+        XCTAssertTrue(model.showsPreference(.cycles))
+        XCTAssertTrue(model.showsPreference(.cellVoltages))
+
+        model.updateAvailability(
+            hasBattery: false,
+            hardwareProfile: HardwareProfile(machineName: "Mac mini")
+        )
+
+        XCTAssertTrue(model.showsBatteryOnlyPreferences)
+        XCTAssertTrue(model.showsPreference(.batteryLevel))
     }
 
     func testBatteryOrUnrecognizedHardwareKeepsPreferencesAvailable() {
@@ -143,22 +158,35 @@ final class BatteryMenuPreferencesTests: XCTestCase {
             hardwareProfile: HardwareProfile(machineName: "Future Mac")
         )
         XCTAssertNil(model.availability.batteryFreeDesktopName)
-        XCTAssertTrue(model.isAvailable(.batteryLevel))
+        XCTAssertTrue(model.showsPreference(.batteryLevel))
 
         model.updateAvailability(
             hasBattery: false,
             hardwareProfile: HardwareProfile(machineName: "MacBook Pro")
         )
         XCTAssertNil(model.availability.batteryFreeDesktopName)
-        XCTAssertTrue(model.isAvailable(.missingBatteryWarning))
-        XCTAssertTrue(model.isAvailable(.batteryLevel))
+        XCTAssertTrue(model.showsPreference(.missingBatteryWarning))
+        XCTAssertTrue(model.showsPreference(.batteryLevel))
 
         model.updateAvailability(
             hasBattery: true,
             hardwareProfile: HardwareProfile(machineName: "Mac mini")
         )
         XCTAssertNil(model.availability.batteryFreeDesktopName)
-        XCTAssertTrue(model.isAvailable(.batteryLevel))
+        XCTAssertTrue(model.showsPreference(.batteryLevel))
+    }
+
+    func testNewDesktopDetectionRestoresTheHiddenDefault() {
+        let model = BatteryPreferencesModel(store: MockBatteryPreferencesStore())
+        model.setShowsBatteryOnlyPreferences(true)
+
+        model.updateAvailability(
+            hasBattery: false,
+            hardwareProfile: HardwareProfile(machineName: "Mac Studio")
+        )
+
+        XCTAssertFalse(model.showsBatteryOnlyPreferences)
+        XCTAssertFalse(model.showsPreference(.batteryLevel))
     }
 }
 
