@@ -124,6 +124,11 @@ button {
   border-bottom: 1px solid rgba(73, 53, 82, 0.08);
   background: rgba(252, 250, 246, 0.78);
   backdrop-filter: blur(22px) saturate(1.4);
+  transition:
+    padding 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 260ms ease,
+    background 260ms ease,
+    backdrop-filter 260ms ease;
 }
 
 .nav {
@@ -131,6 +136,33 @@ button {
   align-items: center;
   justify-content: space-between;
   min-height: 52px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  transition:
+    width 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    min-height 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    padding 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 260ms ease,
+    background 260ms ease,
+    box-shadow 360ms ease;
+}
+
+.site-header.is-condensed {
+  padding: 9px 0;
+  border-color: transparent;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.site-header.is-condensed .nav {
+  width: min(760px, calc(100vw - 30px));
+  min-height: 50px;
+  padding: 5px 7px 5px 10px;
+  border-color: rgba(73, 53, 82, 0.12);
+  background: rgba(252, 250, 246, 0.82);
+  box-shadow: 0 16px 42px rgba(58, 39, 68, 0.13);
+  backdrop-filter: blur(24px) saturate(1.5);
 }
 
 .brand {
@@ -148,8 +180,20 @@ button {
 }
 
 .brand img {
+  width: 42px;
+  height: 42px;
   border-radius: 11px;
   box-shadow: 0 6px 14px rgba(80, 48, 91, 0.11);
+  transition:
+    width 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    height 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 360ms ease;
+}
+
+.site-header.is-condensed .brand img {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
 }
 
 .nav-menu {
@@ -169,15 +213,79 @@ button {
   color: var(--purple-700);
 }
 
+.nav-action {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 40px;
+  transition: width 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav-action .nav-label,
+.nav-action .nav-icon {
+  grid-area: 1 / 1;
+  transition:
+    opacity 180ms ease,
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav-action .nav-icon {
+  width: 18px;
+  height: 18px;
+  opacity: 0;
+  transform: scale(0.72);
+}
+
+.nav-github {
+  width: 50px;
+}
+
+.nav-github .nav-icon {
+  fill: currentColor;
+}
+
 .nav-download {
+  width: 104px;
   padding: 11px 18px;
   color: #fff;
   border-radius: 999px;
   background: var(--purple-700);
   box-shadow: 0 8px 20px rgba(104, 65, 143, 0.2);
   transition:
+    width 240ms cubic-bezier(0.22, 1, 0.36, 1),
     transform 180ms ease,
     background 180ms ease;
+}
+
+.nav-download .nav-icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (min-width: 761px) {
+  .site-header.is-condensed .nav-menu {
+    gap: 22px;
+  }
+
+  .site-header.is-condensed .nav-action {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border-radius: 50%;
+  }
+
+  .site-header.is-condensed .nav-action .nav-label {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+
+  .site-header.is-condensed .nav-action .nav-icon {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .nav-download:hover {
@@ -216,20 +324,12 @@ button {
 .eyebrow {
   display: flex;
   align-items: center;
-  gap: 9px;
   margin: 0 0 18px;
   color: var(--purple-700);
   font-size: 12px;
   font-weight: 760;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-}
-
-.eyebrow > span {
-  width: 22px;
-  height: 2px;
-  border-radius: 2px;
-  background: currentColor;
 }
 
 .eyebrow.light {
@@ -1622,7 +1722,17 @@ button {
     padding: 13px 14px;
   }
 
+  .nav-action {
+    width: auto;
+    height: auto;
+  }
+
+  .nav-github {
+    justify-items: start;
+  }
+
   .nav-download {
+    width: auto;
     margin-top: 6px;
     text-align: center;
   }

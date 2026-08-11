@@ -5,6 +5,7 @@ document.documentElement.classList.add("js");
 
 const PREFERENCES_SIZE = Object.freeze({ width: 900, height: 640 });
 const PREFERENCES_INSET = Object.freeze({ horizontal: 56, vertical: 40 });
+const HEADER_CONDENSE_OFFSET = 80;
 
 const menuOptions = {
   status: [
@@ -238,6 +239,8 @@ FdIcons.register({
 
 const navToggle = document.querySelector(".nav-toggle");
 const navMenu = document.querySelector(".nav-menu");
+const siteHeader = document.querySelector(".site-header");
+const hero = document.querySelector(".hero");
 const macDesktop = document.querySelector(".mac-desktop");
 const menuTrigger = document.querySelector("#menu-bar-app");
 const appMenu = document.querySelector("#app-menu");
@@ -268,6 +271,19 @@ navMenu?.querySelectorAll("a").forEach((link) => {
     navMenu.classList.remove("is-open");
   });
 });
+
+if (siteHeader && hero) {
+  const headerObserver = new IntersectionObserver(
+    ([entry]) => {
+      const hasPassedHero =
+        !entry.isIntersecting &&
+        entry.boundingClientRect.bottom <= HEADER_CONDENSE_OFFSET;
+      siteHeader.classList.toggle("is-condensed", hasPassedHero);
+    },
+    { rootMargin: `-${HEADER_CONDENSE_OFFSET}px 0px 0px` },
+  );
+  headerObserver.observe(hero);
+}
 
 const rowsWithSeparators = (rows) =>
   rows.join("<fd-separator></fd-separator>");
