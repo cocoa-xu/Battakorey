@@ -484,7 +484,7 @@ const renderPreferences = () => {
               <img src="/icon.png" alt="" />
               <div>
                 <strong>Battakorey</strong>
-                <span>Version 2.1.0</span>
+                <span>Version 2.2.0</span>
                 <p>A tiny Takodachi in your menu bar with detailed Mac battery telemetry.</p>
               </div>
             </div>
