@@ -883,7 +883,7 @@ button {
 .demo-stage {
   overflow: hidden;
   border: 1px solid rgba(62, 44, 71, 0.12);
-  border-radius: 30px;
+  border-radius: 22px;
   background: #e7e0eb;
   box-shadow: 0 24px 70px rgba(58, 39, 68, 0.13);
 }
@@ -914,7 +914,7 @@ button {
   align-items: center;
   justify-content: flex-end;
   height: 30px;
-  padding: 0 9px;
+  padding: 0 16px 0 9px;
   color: rgba(30, 25, 34, 0.88);
   background: rgba(250, 248, 250, 0.52);
   box-shadow: 0 1px 0 rgba(56, 42, 63, 0.09);
@@ -929,7 +929,7 @@ button {
 }
 
 .mac-menu-right {
-  gap: 13px;
+  gap: 10px;
   font-weight: 620;
 }
 
@@ -964,23 +964,23 @@ button {
 .menu-bar-app {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 26px;
-  padding: 2px 5px;
+  width: 32px;
+  height: 24px;
+  padding: 2px 3px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 5px;
   background: transparent;
   cursor: pointer;
 }
 
 .menu-bar-app:hover,
 .menu-bar-app[aria-expanded="true"] {
-  background: rgba(65, 49, 74, 0.12);
+  background: rgba(65, 49, 74, 0.07);
 }
 
 .menu-bar-app img {
-  width: 28px;
-  height: 22px;
+  width: 26px;
+  height: 20px;
   object-fit: contain;
 }
 
@@ -1067,9 +1067,10 @@ button {
 .app-menu-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: baseline;
+  align-items: center;
   gap: 20px;
-  min-height: 28px;
+  min-height: 30px;
+  line-height: 1.2;
 }
 
 .app-menu-row span,
