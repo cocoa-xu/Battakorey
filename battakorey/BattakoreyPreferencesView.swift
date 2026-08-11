@@ -585,12 +585,11 @@ final class BattakoreyPreferencesWindowController {
         self.model = model
     }
 
-    var window: NSWindow {
-        presenter.window
-    }
-
     func show() {
+        let wasVisible = presenter.window.isVisible
         presenter.show()
-        presenter.window.makeFirstResponder(nil)
+        if !wasVisible {
+            presenter.window.makeFirstResponder(nil)
+        }
     }
 }
