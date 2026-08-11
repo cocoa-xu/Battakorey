@@ -4,6 +4,8 @@ struct BatteryRawData {
     let registry: [String: Any]
     let powerSource: [String: Any]
     let adapter: [String: Any]?
+    let hasBattery: Bool
+    let batteryIsExpected: Bool
     let smcPower: SMCPowerReading?
     let ioReportPower: IOReportPowerReading?
     let systemHealth: SystemBatteryHealthReading?
@@ -15,6 +17,8 @@ struct BatteryRawData {
         registry: [String: Any],
         powerSource: [String: Any],
         adapter: [String: Any]?,
+        hasBattery: Bool = true,
+        batteryIsExpected: Bool = false,
         smcPower: SMCPowerReading? = nil,
         ioReportPower: IOReportPowerReading? = nil,
         systemHealth: SystemBatteryHealthReading? = nil,
@@ -25,6 +29,8 @@ struct BatteryRawData {
         self.registry = registry
         self.powerSource = powerSource
         self.adapter = adapter
+        self.hasBattery = hasBattery
+        self.batteryIsExpected = batteryIsExpected
         self.smcPower = smcPower
         self.ioReportPower = ioReportPower
         self.systemHealth = systemHealth
@@ -106,6 +112,8 @@ struct BatterySnapshot: Equatable {
         case unknown(String)
     }
 
+    let hasBattery: Bool
+    let batteryIsExpected: Bool
     let chargePercentage: Int
     let isCharging: Bool
     let isFullyCharged: Bool
@@ -164,25 +172,37 @@ struct BatterySnapshot: Equatable {
         batteryTemperature?.value
     }
 
+    var shouldWarnAboutMissingBattery: Bool {
+        batteryIsExpected && !hasBattery
+    }
+
+    var statusBarChargePercentage: Int {
+        hasBattery ? chargePercentage : PowerPercentage.validRange.upperBound
+    }
+
     init?(rawData: BatteryRawData) {
         let registry = rawData.registry
         let powerSourceData = rawData.powerSource
 
-        guard let chargePercentage = Self.integer(in: registry, key: "CurrentCapacity")
-            ?? Self.integer(in: powerSourceData, key: "Current Capacity") else {
+        let reportedChargePercentage = Self.integer(in: registry, key: "CurrentCapacity")
+            ?? Self.integer(in: powerSourceData, key: "Current Capacity")
+        if rawData.hasBattery, reportedChargePercentage == nil {
             return nil
         }
 
         let sourceName = Self.string(in: powerSourceData, key: "Power Source State")
-        let externalConnected = Self.boolean(in: registry, key: "ExternalConnected")
+        let reportedExternalConnected = Self.boolean(in: registry, key: "ExternalConnected")
             ?? Self.boolean(in: registry, key: "AppleRawExternalConnected")
             ?? (sourceName == "AC Power")
+        let externalConnected = rawData.hasBattery ? reportedExternalConnected : true
         let isCharging = Self.boolean(in: registry, key: "IsCharging")
             ?? Self.boolean(in: powerSourceData, key: "Is Charging")
             ?? false
 
+        self.hasBattery = rawData.hasBattery
+        self.batteryIsExpected = rawData.batteryIsExpected
         self.chargePercentage = min(
-            max(chargePercentage, PowerPercentage.validRange.lowerBound),
+            max(reportedChargePercentage ?? 0, PowerPercentage.validRange.lowerBound),
             PowerPercentage.validRange.upperBound
         )
         self.isCharging = isCharging

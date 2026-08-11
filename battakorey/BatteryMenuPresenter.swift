@@ -36,7 +36,7 @@ struct BatteryMenuPresenter {
         if !diagnosticRows.isEmpty {
             sections.append(BatteryMenuSection(title: "Diagnostics", rows: diagnosticRows))
         }
-        return filtered(sections, visibility: visibility)
+        return filtered(sections, visibility: visibility, hasBattery: battery.hasBattery)
     }
 
     func detailSections(
@@ -46,11 +46,19 @@ struct BatteryMenuPresenter {
         filtered([
             BatteryMenuSection(title: "Cells", rows: cellRows(for: battery)),
             BatteryMenuSection(title: "Lifetime", rows: lifetimeRows(for: battery))
-        ], visibility: visibility)
+        ], visibility: visibility, hasBattery: battery.hasBattery)
     }
 
     private func statusRows(for battery: BatterySnapshot) -> [BatteryMenuRow] {
-        var rows = [
+        var rows: [BatteryMenuRow] = []
+        if battery.shouldWarnAboutMissingBattery {
+            rows.append(BatteryMenuRow(
+                id: .missingBatteryWarning,
+                title: "Battery Warning",
+                value: "No Battery Detected"
+            ))
+        }
+        rows.append(contentsOf: [
             BatteryMenuRow(
                 id: .batteryLevel,
                 title: "Battery",
@@ -62,7 +70,7 @@ struct BatteryMenuPresenter {
                 title: "Power Source",
                 value: powerSource(for: battery.powerSource)
             )
-        ]
+        ])
 
         if battery.isCharging {
             rows.append(BatteryMenuRow(
@@ -514,10 +522,13 @@ struct BatteryMenuPresenter {
 
     private func filtered(
         _ sections: [BatteryMenuSection],
-        visibility: BatteryMenuVisibility
+        visibility: BatteryMenuVisibility,
+        hasBattery: Bool
     ) -> [BatteryMenuSection] {
         sections.compactMap { section in
-            let rows = section.rows.filter { visibility.contains($0.id) }
+            let rows = section.rows.filter {
+                visibility.contains($0.id) && (hasBattery || !$0.id.requiresBattery)
+            }
             let title = visibility.showsSectionTitles ? section.title : nil
             return rows.isEmpty ? nil : BatteryMenuSection(title: title, rows: rows)
         }
@@ -602,6 +613,74 @@ struct BatteryMenuPresenter {
         let digits = String(value, radix: 16, uppercase: true)
         let padding = max(0, DiagnosticFormat.hexadecimalWidth - digits.count)
         return "0x\(String(repeating: "0", count: padding))\(digits)"
+    }
+}
+
+private extension BatteryMenuItemID {
+    var requiresBattery: Bool {
+        switch self {
+        case .batteryLevel,
+             .timeRemaining,
+             .currentCharge,
+             .fullCharge,
+             .rawMaximum,
+             .designCapacity,
+             .capacityRetention,
+             .maximumCapacity,
+             .batteryCondition,
+             .cycles,
+             .temperature,
+             .voltage,
+             .current,
+             .batteryPower,
+             .chargeTarget,
+             .optimizedCharging,
+             .failureStatus,
+             .cellDisconnects,
+             .notChargingReason,
+             .slowChargingReason,
+             .chargeInterruption,
+             .publicHealthHint,
+             .capacityEstimated,
+             .batteryFailureModes,
+             .cellVoltages,
+             .cellVoltageDelta,
+             .learnedQmax,
+             .qmaxDelta,
+             .resistance,
+             .resistanceDelta,
+             .dailyChargeRange,
+             .lastGaugeRelearn,
+             .dataFlashWrites,
+             .rsenseOpenEvents,
+             .qmaxDisqualification,
+             .lifetimeTemperatures,
+             .packVoltageRange,
+             .peakCurrent,
+             .operatingTime:
+            return true
+        case .missingBatteryWarning,
+             .status,
+             .powerSource,
+             .systemDraw,
+             .cpuPower,
+             .gpuPower,
+             .anePower,
+             .memoryPower,
+             .gpuMemoryPower,
+             .displayPower,
+             .externalDisplayPower,
+             .adapterRating,
+             .powerContract,
+             .liveInput,
+             .dcInputRail,
+             .pdContract,
+             .lowPowerMode,
+             .adapterErrors,
+             .thermalPressure,
+             .cpuPowerLimits:
+            return false
+        }
     }
 }
 

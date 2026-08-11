@@ -49,12 +49,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func update(with battery: BatterySnapshot) {
         latestBattery = battery
-        let percentage = CGFloat(battery.chargePercentage)
+        let percentage = CGFloat(battery.statusBarChargePercentage)
         if battakorey.percentage != percentage {
             battakorey.percentage = percentage
         }
-        if battakorey.isCharging != battery.isCharging {
-            battakorey.isCharging = battery.isCharging
+        let isCharging = battery.hasBattery && battery.isCharging
+        if battakorey.isCharging != isCharging {
+            battakorey.isCharging = isCharging
         }
         menu.update(with: battery, visibility: preferencesModel.visibility)
     }

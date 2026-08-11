@@ -8,6 +8,7 @@ final class BatteryMenuPreferencesTests: XCTestCase {
 
         XCTAssertEqual(model.visibility, .recommended)
         XCTAssertEqual(model.visibility.visibleItemIDs, [
+            .missingBatteryWarning,
             .batteryLevel,
             .status,
             .powerSource,
@@ -42,6 +43,10 @@ final class BatteryMenuPreferencesTests: XCTestCase {
             Set(model.visibility.visibleItemIDs.map(\.rawValue))
         )
         XCTAssertEqual(store.booleans[BatteryPreferencesModel.sectionTitlesStorageKey], false)
+        XCTAssertEqual(
+            store.booleans[BatteryPreferencesModel.missingBatteryWarningStorageKey],
+            true
+        )
     }
 
     func testRestoresAnEmptySelectionAndIgnoresUnknownItems() {
@@ -57,11 +62,32 @@ final class BatteryMenuPreferencesTests: XCTestCase {
             booleans: [BatteryPreferencesModel.sectionTitlesStorageKey: false]
         ))
 
-        XCTAssertTrue(emptyModel.visibility.visibleItemIDs.isEmpty)
+        XCTAssertEqual(emptyModel.visibility.visibleItemIDs, [.missingBatteryWarning])
         XCTAssertTrue(emptyModel.visibility.showsSectionTitles)
-        XCTAssertEqual(restoredModel.visibility.visibleItemIDs, [.temperature])
+        XCTAssertEqual(
+            restoredModel.visibility.visibleItemIDs,
+            [.missingBatteryWarning, .temperature]
+        )
         XCTAssertTrue(restoredModel.visibility.showsSectionTitles)
         XCTAssertFalse(hiddenTitlesModel.visibility.showsSectionTitles)
+    }
+
+    func testPersistsAndRestoresDisabledMissingBatteryWarning() {
+        let store = MockBatteryPreferencesStore()
+        let model = BatteryPreferencesModel(store: store)
+
+        model.setVisible(false, for: .missingBatteryWarning)
+
+        XCTAssertFalse(model.isVisible(.missingBatteryWarning))
+        XCTAssertEqual(
+            store.booleans[BatteryPreferencesModel.missingBatteryWarningStorageKey],
+            false
+        )
+
+        let restoredModel = BatteryPreferencesModel(store: store)
+
+        XCTAssertFalse(restoredModel.isVisible(.missingBatteryWarning))
+        XCTAssertTrue(restoredModel.isVisible(.status))
     }
 
     func testPersistsSectionTitlePreference() {

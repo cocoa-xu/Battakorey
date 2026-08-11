@@ -264,6 +264,7 @@ struct BattakoreyPreferencesRoot: View {
     }
 
     private static let statusOptions = [
+        BatteryMenuOption(id: .missingBatteryWarning, title: "Missing Battery Warning", caption: "Warn when a confirmed MacBook does not report its built-in battery."),
         BatteryMenuOption(id: .batteryLevel, title: "Battery Level", caption: "Current charge percentage."),
         BatteryMenuOption(id: .status, title: "Status", caption: "Charging, full, AC, or discharging state."),
         BatteryMenuOption(id: .powerSource, title: "Power Source", caption: "AC, battery, or UPS power."),

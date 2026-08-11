@@ -2,6 +2,7 @@ import Combine
 import Foundation
 
 enum BatteryMenuItemID: String, CaseIterable, Hashable {
+    case missingBatteryWarning
     case batteryLevel
     case status
     case powerSource
@@ -81,6 +82,7 @@ struct BatteryMenuVisibility: Equatable {
 
     static let recommended = BatteryMenuVisibility(
         visibleItemIDs: [
+            .missingBatteryWarning,
             .batteryLevel,
             .status,
             .powerSource,
@@ -127,6 +129,7 @@ extension UserDefaults: BatteryPreferencesStoring {
 final class BatteryPreferencesModel: ObservableObject {
     static let storageKey = "VisibleBatteryMenuItems"
     static let sectionTitlesStorageKey = "ShowsBatteryMenuSectionTitles"
+    static let missingBatteryWarningStorageKey = "ShowsMissingBatteryWarning"
 
     @Published private(set) var visibility: BatteryMenuVisibility
     var onChange: ((BatteryMenuVisibility) -> Void)?
@@ -142,9 +145,14 @@ final class BatteryPreferencesModel: ObservableObject {
         self.storageKey = storageKey
 
         let storedItemIDs = store.stringArray(forKey: storageKey)
-        let visibleItemIDs = storedItemIDs.map {
+        var visibleItemIDs = storedItemIDs.map {
             Set($0.compactMap(BatteryMenuItemID.init(rawValue:)))
         } ?? BatteryMenuVisibility.recommended.visibleItemIDs
+        if store.boolean(forKey: Self.missingBatteryWarningStorageKey) ?? true {
+            visibleItemIDs.insert(.missingBatteryWarning)
+        } else {
+            visibleItemIDs.remove(.missingBatteryWarning)
+        }
         let showsSectionTitles = store.boolean(forKey: Self.sectionTitlesStorageKey)
             ?? (storedItemIDs == nil ? BatteryMenuVisibility.recommended.showsSectionTitles : true)
         visibility = BatteryMenuVisibility(
@@ -195,6 +203,10 @@ final class BatteryPreferencesModel: ObservableObject {
         store.setBoolean(
             visibility.showsSectionTitles,
             forKey: Self.sectionTitlesStorageKey
+        )
+        store.setBoolean(
+            visibility.contains(.missingBatteryWarning),
+            forKey: Self.missingBatteryWarningStorageKey
         )
         onChange?(visibility)
     }

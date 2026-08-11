@@ -79,6 +79,64 @@ final class BatteryMenuPresenterTests: XCTestCase {
         XCTAssertNil(rows["Adapter Rating"])
     }
 
+    func testOmitsBatteryOnlyRowsOnBatteryFreeDevice() throws {
+        let rawData = BatteryRawData(
+            registry: [
+                "BatteryInstalled": false,
+                "ExternalConnected": true,
+                "CurrentCapacity": 0,
+                "CycleCount": 0,
+                "Voltage": 0,
+                "Amperage": 0,
+                "PowerTelemetryData": ["SystemLoad": 8_358]
+            ],
+            powerSource: [:],
+            adapter: nil,
+            hasBattery: false,
+            smcPower: SMCPowerReading(
+                batteryWatts: 0,
+                inputVolts: nil,
+                inputAmps: nil,
+                inputWatts: 7.1
+            )
+        )
+        let battery = try XCTUnwrap(BatterySnapshot(rawData: rawData))
+        let sections = presenter.sections(for: battery)
+        let rows = rowValues(in: sections)
+
+        XCTAssertEqual(rows["Status"], "On AC Power")
+        XCTAssertEqual(rows["Power Source"], "AC Power")
+        XCTAssertEqual(rows["Controller System Load"], "8.4 W")
+        XCTAssertEqual(rows["Live Input"], "7.1 W")
+        XCTAssertNil(rows["Battery"])
+        XCTAssertNil(rows["Cycles"])
+        XCTAssertNil(rows["Battery Flow"])
+        XCTAssertNil(rows["Voltage"])
+        XCTAssertTrue(presenter.detailSections(for: battery).isEmpty)
+    }
+
+    func testMissingBatteryWarningCanBeHiddenOnConfirmedMacBook() throws {
+        let rawData = BatteryRawData(
+            registry: ["ExternalConnected": true],
+            powerSource: [:],
+            adapter: nil,
+            hasBattery: false,
+            batteryIsExpected: true
+        )
+        let battery = try XCTUnwrap(BatterySnapshot(rawData: rawData))
+
+        let visibleRows = rowValues(in: presenter.sections(for: battery))
+        let hiddenRows = rowValues(in: presenter.sections(
+            for: battery,
+            visibility: BatteryMenuVisibility(
+                visibleItemIDs: [.status, .powerSource]
+            )
+        ))
+
+        XCTAssertEqual(visibleRows["Battery Warning"], "No Battery Detected")
+        XCTAssertNil(hiddenRows["Battery Warning"])
+    }
+
     func testFiltersMainAndInternalRowsWithMockedVisibility() throws {
         let battery = try XCTUnwrap(BatterySnapshot(rawData: MockBatteryData.discharging))
         let visibility = BatteryMenuVisibility(visibleItemIDs: [.temperature, .cellVoltages])

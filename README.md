@@ -58,6 +58,8 @@ Battakorey combines macOS power-source APIs with read-only `AppleSmartBattery` I
 
 AppleSMC and IOReport are undocumented interfaces that vary by hardware and macOS release. IOReport is loaded at runtime, and unavailable channels or implausible values are omitted instead of causing the app to fail.
 
+On desktop Macs without a built-in battery, Battakorey keeps system and input-power telemetry available while omitting battery-only values reported as zero by the hardware registry. If a confirmed MacBook does not report its expected battery, the menu shows a warning that can be disabled in Preferences.
+
 The additional telemetry does not require root access or disabling System Integrity Protection. The app is intentionally not sandboxed, which makes this build unsuitable for Mac App Store distribution.
 
 ### References

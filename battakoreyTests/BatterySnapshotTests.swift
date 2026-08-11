@@ -116,6 +116,37 @@ final class BatterySnapshotTests: XCTestCase {
         XCTAssertNil(BatterySnapshot(rawData: rawData))
     }
 
+    func testBatteryFreeDeviceDoesNotRequireChargePercentage() throws {
+        let rawData = BatteryRawData(
+            registry: ["BatteryInstalled": false, "ExternalConnected": true],
+            powerSource: [:],
+            adapter: nil,
+            hasBattery: false
+        )
+
+        let battery = try XCTUnwrap(BatterySnapshot(rawData: rawData))
+
+        XCTAssertFalse(battery.hasBattery)
+        XCTAssertFalse(battery.shouldWarnAboutMissingBattery)
+        XCTAssertEqual(battery.chargePercentage, 0)
+        XCTAssertEqual(battery.statusBarChargePercentage, 100)
+        XCTAssertEqual(battery.powerSource, .ac)
+    }
+
+    func testMissingBatteryWarningRequiresConfirmedMacBook() throws {
+        let rawData = BatteryRawData(
+            registry: ["ExternalConnected": true],
+            powerSource: [:],
+            adapter: nil,
+            hasBattery: false,
+            batteryIsExpected: true
+        )
+
+        let battery = try XCTUnwrap(BatterySnapshot(rawData: rawData))
+
+        XCTAssertTrue(battery.shouldWarnAboutMissingBattery)
+    }
+
     func testMalformedPrivateValuesAreIgnoredWithoutOverflow() throws {
         let rawData = BatteryRawData(
             registry: [

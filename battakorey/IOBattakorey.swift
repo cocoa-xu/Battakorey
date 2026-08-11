@@ -17,6 +17,7 @@ final class IOKitBatteryInfoProvider: BatteryInfoProviding {
     private let systemHealthReader = SystemBatteryHealthReader()
     private let portPowerReader = PortPowerReader()
     private let powerConditionReader = PowerConditionReader()
+    private let hardwareProfileReader = HardwareProfileReader()
     private var cachedSlowRegistry: [String: Any] = [:]
     private var slowRegistryReadAt: TimeInterval?
     private var cachedDiagnosticRegistry: [String: Any] = [:]
@@ -26,6 +27,7 @@ final class IOKitBatteryInfoProvider: BatteryInfoProviding {
 
     private let liveRegistryKeys = [
         "CurrentCapacity",
+        "BatteryInstalled",
         "ExternalConnected",
         "AppleRawExternalConnected",
         "IsCharging",
@@ -60,11 +62,16 @@ final class IOKitBatteryInfoProvider: BatteryInfoProviding {
     func snapshot() -> BatterySnapshot? {
         let date = Date()
         let uptime = ProcessInfo.processInfo.systemUptime
-        guard let registry = registryProperties(at: uptime) else { return nil }
+        let registry = registryProperties(at: uptime) ?? [:]
+        let powerSource = powerSourceDescription()
+        let hasBattery = (registry["BatteryInstalled"] as? NSNumber)?.boolValue == true
+            || powerSource != nil
         let rawData = BatteryRawData(
             registry: registry,
-            powerSource: powerSourceDescription() ?? [:],
+            powerSource: powerSource ?? [:],
             adapter: externalPowerAdapterDetails(),
+            hasBattery: hasBattery,
+            batteryIsExpected: hardwareProfileReader.isMacBook(),
             smcPower: smcPowerReader.read(at: date),
             ioReportPower: ioReportPowerReader?.read(),
             systemHealth: systemHealthReader.read(at: date),
