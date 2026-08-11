@@ -1,4 +1,5 @@
 import AppKit
+import FlowingDayControls
 import FlowingDayPreferences
 import SwiftUI
 
@@ -33,9 +34,9 @@ struct BattakoreyPreferencesRoot: View {
                 applicationName: "Battakorey",
                 preferencesTitle: "Preferences",
                 applicationIcon: NSApp.applicationIconImage,
-                defaultAccent: PreferencesAccent(
-                    fill: PreferencesPalette.dynamic(light: 0x8B6FC1, dark: 0xB49AE6),
-                    foreground: PreferencesPalette.dynamic(light: 0x654A9D, dark: 0xC8B1F1)
+                defaultAccent: FlowingAccent(
+                    fill: FlowingPalette.dynamic(light: 0x8B6FC1, dark: 0xB49AE6),
+                    foreground: FlowingPalette.dynamic(light: 0x654A9D, dark: 0xC8B1F1)
                 )
             ),
             groups: [
@@ -72,11 +73,11 @@ struct BattakoreyPreferencesRoot: View {
                     ) {
                         HStack(spacing: 8) {
                             Button("Recommended", action: model.useRecommendedItems)
-                                .buttonStyle(PreferencesSoftButtonStyle(
+                                .buttonStyle(FlowingSoftButtonStyle(
                                     isProminent: model.visibility == .recommended
                                 ))
                             Button("Show Everything", action: model.showAllItems)
-                                .buttonStyle(PreferencesSoftButtonStyle(
+                                .buttonStyle(FlowingSoftButtonStyle(
                                     isProminent: model.visibility == .all
                                 ))
                         }
@@ -370,8 +371,8 @@ struct BattakoreyPreferencesRoot: View {
 }
 
 private struct BattakoreyAboutPane: View {
-    @Environment(\.preferencesAccent) private var accent
-    @Environment(\.preferencesTypography) private var typography
+    @Environment(\.flowingAccent) private var accent
+    @Environment(\.flowingTypography) private var typography
     let versionText: String
 
     var body: some View {
@@ -379,13 +380,13 @@ private struct BattakoreyAboutPane: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Battakorey")
                     .font(typography.contentTitle.font)
-                    .foregroundStyle(PreferencesPalette.ink)
+                    .foregroundStyle(FlowingPalette.ink)
                 Text(versionText)
-                    .font(typography.pageSubtitle.font)
-                    .foregroundStyle(PreferencesPalette.faint)
+                    .font(typography.body.font)
+                    .foregroundStyle(FlowingPalette.faint)
                 Text("A tiny Takodachi in your menu bar with detailed Mac battery telemetry.")
                     .font(typography.body.font)
-                    .foregroundStyle(PreferencesPalette.muted)
+                    .foregroundStyle(FlowingPalette.muted)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 4)
             }
@@ -409,7 +410,7 @@ private struct BattakoreyAboutPane: View {
 
             HStack(spacing: 4) {
                 Text("Copyright © 2026")
-                    .foregroundStyle(PreferencesPalette.faint)
+                    .foregroundStyle(FlowingPalette.faint)
                 Link(destination: Self.cocoaURL) {
                     Text("Cocoa")
                         .foregroundStyle(accent.foreground)
@@ -430,7 +431,7 @@ private struct BattakoreyAboutPane: View {
             Link(destination: destination) {
                 Text("GitHub")
             }
-            .buttonStyle(PreferencesSoftButtonStyle())
+            .buttonStyle(FlowingSoftButtonStyle())
             .help("Open \(title) on GitHub")
         }
     }

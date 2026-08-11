@@ -11,7 +11,7 @@ options:
 packages:
   FlowingDayUI:
     url: https://github.com/cocoa-xu/flowing-day-ui
-    exactVersion: 2.0.0
+    exactVersion: 2.1.0
 
 settings:
   base:
@@ -50,6 +50,8 @@ targets:
         MARKETING_VERSION: 2.1.0
         PRODUCT_BUNDLE_IDENTIFIER: moe.uwucocoa.battakorey
     dependencies:
+      - package: FlowingDayUI
+        product: FlowingDayControls
       - package: FlowingDayUI
         product: FlowingDayPreferences
 
