@@ -586,6 +586,10 @@ final class BattakoreyPreferencesWindowController {
     }
 
     func show() {
+        let wasVisible = presenter.window.isVisible
         presenter.show()
+        if !wasVisible {
+            presenter.window.makeFirstResponder(nil)
+        }
     }
 }
