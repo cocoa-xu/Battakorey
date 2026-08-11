@@ -64,6 +64,7 @@ struct BattakoreyPreferencesRoot: View {
         ) {
             PreferencesPaneStack {
                 batteryAvailabilityNotice
+                desktopMacPreferencesSection
 
                 PreferencesSection(
                     "Presets",
@@ -294,12 +295,38 @@ struct BattakoreyPreferencesRoot: View {
 
     @ViewBuilder
     private var batteryAvailabilityNotice: some View {
-        if let deviceName = model.availability.batteryFreeDesktopName {
+        if let deviceName = model.availability.batteryFreeDesktopName,
+           model.showsDesktopMacNotice {
             BatteryAvailabilityNotice(
                 deviceName: deviceName,
-                showsAllOptions: model.showsBatteryOnlyPreferences,
-                setShowsAllOptions: model.setShowsBatteryOnlyPreferences
+                dismiss: model.dismissDesktopMacNotice,
+                dismissForever: model.dismissDesktopMacNoticeForever
             )
+        }
+    }
+
+    @ViewBuilder
+    private var desktopMacPreferencesSection: some View {
+        if model.availability.batteryFreeDesktopName != nil {
+            PreferencesSection("Desktop Mac") {
+                PreferencesSwitchRow(
+                    title: "Show All Battery Options",
+                    caption: "Include controls intended for Macs with built-in batteries. Values that aren’t reported will stay out of the menu.",
+                    isOn: Binding(
+                        get: { model.showsBatteryOnlyPreferences },
+                        set: model.setShowsBatteryOnlyPreferences
+                    )
+                )
+                PreferencesRowSeparator()
+                PreferencesSwitchRow(
+                    title: "Desktop Mac Note",
+                    caption: "Show the gentle note about why battery-only options are hidden by default.",
+                    isOn: Binding(
+                        get: { model.showsDesktopMacNotice },
+                        set: model.setShowsDesktopMacNotice
+                    )
+                )
+            }
         }
     }
 
@@ -417,8 +444,8 @@ struct BattakoreyPreferencesRoot: View {
 
 private struct BatteryAvailabilityNotice: View {
     let deviceName: String
-    let showsAllOptions: Bool
-    let setShowsAllOptions: (Bool) -> Void
+    let dismiss: () -> Void
+    let dismissForever: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -438,10 +465,10 @@ private struct BatteryAvailabilityNotice: View {
 
             HStack {
                 Spacer()
-                Button(showsAllOptions ? "Hide Battery Options" : "Show All") {
-                    setShowsAllOptions(!showsAllOptions)
-                }
-                .buttonStyle(FlowingSoftButtonStyle())
+                Button("Dismiss", action: dismiss)
+                    .buttonStyle(FlowingSoftButtonStyle())
+                Button("Don’t Show Again", action: dismissForever)
+                    .buttonStyle(FlowingSoftButtonStyle())
             }
         }
         .foregroundStyle(Self.foreground)

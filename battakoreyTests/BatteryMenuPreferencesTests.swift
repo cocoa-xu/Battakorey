@@ -116,7 +116,8 @@ final class BatteryMenuPreferencesTests: XCTestCase {
     }
 
     func testBatteryFreeDesktopHidesOnlyBatterySpecificOptionsByDefault() {
-        let model = BatteryPreferencesModel(store: MockBatteryPreferencesStore())
+        let store = MockBatteryPreferencesStore()
+        let model = BatteryPreferencesModel(store: store)
 
         model.updateAvailability(
             hasBattery: false,
@@ -136,6 +137,10 @@ final class BatteryMenuPreferencesTests: XCTestCase {
 
         model.setShowsBatteryOnlyPreferences(true)
 
+        XCTAssertEqual(
+            store.booleans[BatteryPreferencesModel.batteryOnlyPreferencesStorageKey],
+            true
+        )
         XCTAssertTrue(model.showsPreference(.missingBatteryWarning))
         XCTAssertTrue(model.showsPreference(.batteryLevel))
         XCTAssertTrue(model.showsPreference(.cycles))
@@ -148,6 +153,14 @@ final class BatteryMenuPreferencesTests: XCTestCase {
 
         XCTAssertTrue(model.showsBatteryOnlyPreferences)
         XCTAssertTrue(model.showsPreference(.batteryLevel))
+
+        let restoredModel = BatteryPreferencesModel(store: store)
+        restoredModel.updateAvailability(
+            hasBattery: false,
+            hardwareProfile: HardwareProfile(machineName: "Mac mini")
+        )
+        XCTAssertTrue(restoredModel.showsBatteryOnlyPreferences)
+        XCTAssertTrue(restoredModel.showsPreference(.batteryLevel))
     }
 
     func testBatteryOrUnrecognizedHardwareKeepsPreferencesAvailable() {
@@ -176,7 +189,7 @@ final class BatteryMenuPreferencesTests: XCTestCase {
         XCTAssertTrue(model.showsPreference(.batteryLevel))
     }
 
-    func testNewDesktopDetectionRestoresTheHiddenDefault() {
+    func testDesktopDetectionPreservesTheStoredBatteryOptionOverride() {
         let model = BatteryPreferencesModel(store: MockBatteryPreferencesStore())
         model.setShowsBatteryOnlyPreferences(true)
 
@@ -185,8 +198,59 @@ final class BatteryMenuPreferencesTests: XCTestCase {
             hardwareProfile: HardwareProfile(machineName: "Mac Studio")
         )
 
-        XCTAssertFalse(model.showsBatteryOnlyPreferences)
-        XCTAssertFalse(model.showsPreference(.batteryLevel))
+        XCTAssertTrue(model.showsBatteryOnlyPreferences)
+        XCTAssertTrue(model.showsPreference(.batteryLevel))
+    }
+
+    func testDismissesDesktopNoteForOnlyTheCurrentSession() {
+        let store = MockBatteryPreferencesStore()
+        let model = BatteryPreferencesModel(store: store)
+        model.updateAvailability(
+            hasBattery: false,
+            hardwareProfile: HardwareProfile(machineName: "iMac")
+        )
+
+        XCTAssertTrue(model.showsDesktopMacNotice)
+
+        model.dismissDesktopMacNotice()
+        model.updateAvailability(
+            hasBattery: false,
+            hardwareProfile: HardwareProfile(machineName: "iMac")
+        )
+
+        XCTAssertFalse(model.showsDesktopMacNotice)
+        XCTAssertNil(store.booleans[BatteryPreferencesModel.desktopMacNoticeStorageKey])
+
+        let nextSessionModel = BatteryPreferencesModel(store: store)
+        nextSessionModel.updateAvailability(
+            hasBattery: false,
+            hardwareProfile: HardwareProfile(machineName: "iMac")
+        )
+        XCTAssertTrue(nextSessionModel.showsDesktopMacNotice)
+    }
+
+    func testDismissesDesktopNoteForeverAndAllowsRestoringIt() {
+        let store = MockBatteryPreferencesStore()
+        let model = BatteryPreferencesModel(store: store)
+
+        model.dismissDesktopMacNoticeForever()
+
+        XCTAssertFalse(model.showsDesktopMacNotice)
+        XCTAssertEqual(
+            store.booleans[BatteryPreferencesModel.desktopMacNoticeStorageKey],
+            false
+        )
+
+        let restoredModel = BatteryPreferencesModel(store: store)
+        XCTAssertFalse(restoredModel.showsDesktopMacNotice)
+
+        restoredModel.setShowsDesktopMacNotice(true)
+
+        XCTAssertTrue(restoredModel.showsDesktopMacNotice)
+        XCTAssertEqual(
+            store.booleans[BatteryPreferencesModel.desktopMacNoticeStorageKey],
+            true
+        )
     }
 }
 

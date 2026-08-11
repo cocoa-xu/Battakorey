@@ -212,14 +212,18 @@ final class BatteryPreferencesModel: ObservableObject {
     static let storageKey = "VisibleBatteryMenuItems"
     static let sectionTitlesStorageKey = "ShowsBatteryMenuSectionTitles"
     static let missingBatteryWarningStorageKey = "ShowsMissingBatteryWarning"
+    static let batteryOnlyPreferencesStorageKey = "ShowsBatteryOnlyPreferences"
+    static let desktopMacNoticeStorageKey = "ShowsBatteryFreeDesktopNotice"
 
     @Published private(set) var visibility: BatteryMenuVisibility
     @Published private(set) var availability = BatteryMenuAvailability.unknown
-    @Published private(set) var showsBatteryOnlyPreferences = false
+    @Published private(set) var showsBatteryOnlyPreferences: Bool
+    @Published private(set) var showsDesktopMacNotice: Bool
     var onChange: ((BatteryMenuVisibility) -> Void)?
 
     private let store: BatteryPreferencesStoring
     private let storageKey: String
+    private var showsDesktopMacNoticePersistently: Bool
 
     init(
         store: BatteryPreferencesStoring = UserDefaults.standard,
@@ -243,6 +247,14 @@ final class BatteryPreferencesModel: ObservableObject {
             visibleItemIDs: visibleItemIDs,
             showsSectionTitles: showsSectionTitles
         )
+        showsBatteryOnlyPreferences = store.boolean(
+            forKey: Self.batteryOnlyPreferencesStorageKey
+        ) ?? false
+        let showsDesktopMacNotice = store.boolean(
+            forKey: Self.desktopMacNoticeStorageKey
+        ) ?? true
+        self.showsDesktopMacNotice = showsDesktopMacNotice
+        showsDesktopMacNoticePersistently = showsDesktopMacNotice
     }
 
     func isVisible(_ itemID: BatteryMenuItemID) -> Bool {
@@ -256,6 +268,30 @@ final class BatteryPreferencesModel: ObservableObject {
     func setShowsBatteryOnlyPreferences(_ showsBatteryOnlyPreferences: Bool) {
         guard self.showsBatteryOnlyPreferences != showsBatteryOnlyPreferences else { return }
         self.showsBatteryOnlyPreferences = showsBatteryOnlyPreferences
+        store.setBoolean(
+            showsBatteryOnlyPreferences,
+            forKey: Self.batteryOnlyPreferencesStorageKey
+        )
+    }
+
+    func dismissDesktopMacNotice() {
+        showsDesktopMacNotice = false
+    }
+
+    func dismissDesktopMacNoticeForever() {
+        showsDesktopMacNotice = false
+        showsDesktopMacNoticePersistently = false
+        store.setBoolean(false, forKey: Self.desktopMacNoticeStorageKey)
+    }
+
+    func setShowsDesktopMacNotice(_ showsDesktopMacNotice: Bool) {
+        guard self.showsDesktopMacNotice != showsDesktopMacNotice
+                || showsDesktopMacNoticePersistently != showsDesktopMacNotice else {
+            return
+        }
+        self.showsDesktopMacNotice = showsDesktopMacNotice
+        showsDesktopMacNoticePersistently = showsDesktopMacNotice
+        store.setBoolean(showsDesktopMacNotice, forKey: Self.desktopMacNoticeStorageKey)
     }
 
     func updateAvailability(hasBattery: Bool, hardwareProfile: HardwareProfile?) {
@@ -266,7 +302,7 @@ final class BatteryPreferencesModel: ObservableObject {
         guard self.availability != availability else { return }
         self.availability = availability
         if desktopName != nil {
-            showsBatteryOnlyPreferences = false
+            showsDesktopMacNotice = showsDesktopMacNoticePersistently
         }
     }
 
