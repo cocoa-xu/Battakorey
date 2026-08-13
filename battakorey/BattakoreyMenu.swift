@@ -1,19 +1,38 @@
 import Cocoa
 
-final class BattakoreyMenu: NSMenu {
+final class BattakoreyMenu: NSMenu, NSMenuDelegate {
     var preferencesHandler: (() -> Void)?
 
     private let presenter = BatteryMenuPresenter()
     private var layout: [String] = []
     private var rowViews: [BattakoreyMenuItem] = []
     private var hasBuiltMenu = false
+    private var isPresenting = false
+    private var pendingUpdate: (battery: BatterySnapshot, visibility: BatteryMenuVisibility)?
 
     func prepare() {
         guard !hasBuiltMenu else { return }
+        delegate = self
         rebuild(with: [], detailSections: [])
     }
 
     func update(with battery: BatterySnapshot, visibility: BatteryMenuVisibility) {
+        pendingUpdate = (battery, visibility)
+        guard isPresenting else { return }
+        render(battery: battery, visibility: visibility)
+    }
+
+    func menuWillOpen(_ menu: NSMenu) {
+        isPresenting = true
+        guard let pendingUpdate else { return }
+        render(battery: pendingUpdate.battery, visibility: pendingUpdate.visibility)
+    }
+
+    func menuDidClose(_ menu: NSMenu) {
+        isPresenting = false
+    }
+
+    private func render(battery: BatterySnapshot, visibility: BatteryMenuVisibility) {
         let sections = presenter.sections(for: battery, visibility: visibility)
         let detailSections = presenter.detailSections(for: battery, visibility: visibility)
         let newLayout = layout(for: sections, prefix: "main")
@@ -129,7 +148,9 @@ final class BattakoreyMenuItem: NSView {
 
         configure(titleLabel)
         configure(detailLabel)
+        titleLabel.textColor = .labelColor
         detailLabel.alignment = .right
+        detailLabel.textColor = .secondaryLabelColor
         addSubview(titleLabel)
         addSubview(detailLabel)
     }
@@ -139,11 +160,13 @@ final class BattakoreyMenuItem: NSView {
     }
 
     func update(title: String, value: String) {
-        titleLabel.stringValue = title
-        titleLabel.textColor = .labelColor
-        detailLabel.stringValue = value
-        detailLabel.textColor = .secondaryLabelColor
-        layoutLabels()
+        if titleLabel.stringValue != title {
+            titleLabel.stringValue = title
+            layoutLabels()
+        }
+        if detailLabel.stringValue != value {
+            detailLabel.stringValue = value
+        }
     }
 
     private func layoutLabels() {
