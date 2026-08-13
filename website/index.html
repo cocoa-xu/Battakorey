@@ -79,17 +79,51 @@
               />
             </svg>
           </a>
-          <a
-            class="nav-action nav-download"
-            href="https://github.com/cocoa-xu/Battakorey/releases/latest/download/Battakorey-Apple-Silicon.dmg"
-            data-download-link
-            aria-label="Download Battakorey"
-          >
-            <span class="nav-label">Download</span>
-            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14" />
-            </svg>
-          </a>
+          <div class="nav-download-menu" data-download-menu>
+            <button
+              class="nav-action nav-download"
+              type="button"
+              aria-label="Choose a Battakorey download"
+              aria-haspopup="menu"
+              aria-controls="nav-download-panel"
+              aria-expanded="false"
+              data-download-trigger
+            >
+              <span class="nav-label">Download</span>
+              <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14" />
+              </svg>
+            </button>
+            <div
+              class="download-menu"
+              id="nav-download-panel"
+              role="menu"
+              aria-label="Download Battakorey"
+              aria-hidden="true"
+              inert
+              data-download-panel
+            >
+              <p>Download Battakorey</p>
+              <a
+                href="https://github.com/cocoa-xu/Battakorey/releases/latest/download/Battakorey-Apple-Silicon.dmg"
+                role="menuitem"
+              >
+                <span><strong>Apple Silicon</strong><small>M-Series Macs</small></span>
+              </a>
+              <a
+                href="https://github.com/cocoa-xu/Battakorey/releases/latest/download/Battakorey-Universal.dmg"
+                role="menuitem"
+              >
+                <span><strong>Universal</strong><small>Runs on both</small></span>
+              </a>
+              <a
+                href="https://github.com/cocoa-xu/Battakorey/releases/latest/download/Battakorey-Intel.dmg"
+                role="menuitem"
+              >
+                <span><strong>Intel</strong><small>Intel processor</small></span>
+              </a>
+            </div>
+          </div>
         </div>
       </nav>
     </header>

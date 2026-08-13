@@ -252,9 +252,12 @@ button {
   width: 104px;
   padding: 11px 18px;
   color: #fff;
+  border: 0;
   border-radius: 999px;
   background: var(--purple-700);
   box-shadow: 0 8px 20px rgba(104, 65, 143, 0.2);
+  cursor: pointer;
+  font: inherit;
   transition:
     width 240ms cubic-bezier(0.22, 1, 0.36, 1),
     transform 180ms ease,
@@ -313,6 +316,83 @@ button {
 .nav-download:hover {
   transform: translateY(-1px);
   background: var(--purple-800);
+}
+
+.nav-download-menu {
+  position: relative;
+}
+
+.download-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 226px;
+  padding: 7px;
+  visibility: hidden;
+  opacity: 0;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(252, 250, 246, 0.97);
+  box-shadow:
+    0 18px 48px rgba(58, 39, 68, 0.16),
+    0 3px 10px rgba(58, 39, 68, 0.08);
+  pointer-events: none;
+  transform: translateY(-5px) scale(0.97);
+  transform-origin: top right;
+  transition:
+    opacity 150ms ease,
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 220ms;
+  backdrop-filter: blur(24px) saturate(1.15);
+}
+
+.nav-download-menu[data-open] .download-menu {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  transition-delay: 0s;
+}
+
+.download-menu > p {
+  margin: 5px 10px 7px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 720;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nav-menu .download-menu a {
+  display: flex;
+  min-height: 50px;
+  align-items: center;
+  padding: 7px 10px;
+  color: var(--ink);
+  border-radius: 12px;
+}
+
+.nav-menu .download-menu a:hover,
+.nav-menu .download-menu a:focus-visible {
+  color: var(--purple-800);
+  outline: 0;
+  background: var(--purple-100);
+}
+
+.download-menu a > span {
+  display: grid;
+  gap: 2px;
+}
+
+.download-menu strong {
+  font-size: 13px;
+  font-weight: 680;
+}
+
+.download-menu small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 520;
 }
 
 .nav-toggle {
@@ -1935,6 +2015,11 @@ button {
     width: auto;
     margin-top: 6px;
     text-align: center;
+  }
+
+  .download-menu {
+    top: calc(100% + 8px);
+    width: min(226px, 100%);
   }
 
   .hero {
