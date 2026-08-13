@@ -8,8 +8,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let menu: BattakoreyMenu
     private let batteryMonitor: BatteryMonitor
     private let preferencesModel: BatteryPreferencesModel
+    private let automationSettings: BatteryAutomationSettings
+    private let automationState: BatteryAutomationState
+    private let automationServer: BatteryAutomationServer
     private lazy var preferencesController = BattakoreyPreferencesWindowController(
-        model: preferencesModel
+        model: preferencesModel,
+        automationSettings: automationSettings
     )
     private var latestBattery: BatterySnapshot?
 
@@ -21,7 +25,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ))
         menu = BattakoreyMenu()
         batteryMonitor = BatteryMonitor()
-        preferencesModel = BatteryPreferencesModel()
+        let preferencesModel = BatteryPreferencesModel()
+        self.preferencesModel = preferencesModel
+        automationSettings = BatteryAutomationSettings()
+        let automationState = BatteryAutomationState(visibility: preferencesModel.visibility)
+        self.automationState = automationState
+        automationServer = BatteryAutomationServer(state: automationState)
         super.init()
 
         statusBarItem.menu = menu
@@ -31,7 +40,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         menu.prepare()
         preferencesModel.onChange = { [weak self] visibility in
-            guard let self, let battery = self.latestBattery else { return }
+            guard let self else { return }
+            self.automationState.update(visibility: visibility)
+            guard let battery = self.latestBattery else { return }
             self.menu.update(with: battery, visibility: visibility)
         }
         batteryMonitor.onSnapshot = { [weak self] battery in
@@ -40,15 +51,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        automationSettings.attach(server: automationServer)
         batteryMonitor.start()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         batteryMonitor.stop()
+        automationSettings.stop()
     }
 
     private func update(with battery: BatterySnapshot) {
         latestBattery = battery
+        automationState.update(snapshot: battery)
         preferencesModel.updateAvailability(
             hasBattery: battery.hasBattery,
             hardwareProfile: battery.hardwareProfile

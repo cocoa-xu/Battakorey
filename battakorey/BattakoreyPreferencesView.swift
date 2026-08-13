@@ -8,6 +8,7 @@ private enum BattakoreyPreferencesPage: Hashable {
     case charging
     case componentPower
     case internals
+    case automation
     case about
 }
 
@@ -25,6 +26,7 @@ private enum BattakoreyPreferencesLayout {
 
 struct BattakoreyPreferencesRoot: View {
     @ObservedObject var model: BatteryPreferencesModel
+    @ObservedObject var automationSettings: BatteryAutomationSettings
     @State private var selection = BattakoreyPreferencesPage.mainMenu
 
     var body: some View {
@@ -48,7 +50,7 @@ struct BattakoreyPreferencesRoot: View {
                 PreferencesPageGroup(
                     id: "advanced",
                     title: "Advanced",
-                    pages: [componentPowerPage, internalsPage]
+                    pages: [componentPowerPage, internalsPage, automationPage]
                 ),
                 PreferencesPageGroup(id: "application", pages: [aboutPage])
             ]
@@ -203,6 +205,17 @@ struct BattakoreyPreferencesRoot: View {
             headerIcon: .application
         ) {
             BattakoreyAboutPane(versionText: Self.versionText)
+        }
+    }
+
+    private var automationPage: PreferencesPage<BattakoreyPreferencesPage> {
+        PreferencesPage(
+            id: .automation,
+            title: "Automation",
+            subtitle: "Control local MCP and REST access to power readings.",
+            icon: .system("terminal")
+        ) {
+            BattakoreyAutomationPane(settings: automationSettings)
         }
     }
 
@@ -572,17 +585,25 @@ private struct BattakoreyAboutPane: View {
 @MainActor
 final class BattakoreyPreferencesWindowController {
     private let model: BatteryPreferencesModel
+    private let automationSettings: BatteryAutomationSettings
     private lazy var presenter = PreferencesWindowPresenter(
         configuration: PreferencesWindowConfiguration(
             size: BattakoreyPreferencesLayout.windowSize,
             minimumSize: BattakoreyPreferencesLayout.windowSize,
             maximumSize: BattakoreyPreferencesLayout.windowSize
         ),
-        rootView: BattakoreyPreferencesRoot(model: model)
+        rootView: BattakoreyPreferencesRoot(
+            model: model,
+            automationSettings: automationSettings
+        )
     )
 
-    init(model: BatteryPreferencesModel) {
+    init(
+        model: BatteryPreferencesModel,
+        automationSettings: BatteryAutomationSettings
+    ) {
         self.model = model
+        self.automationSettings = automationSettings
     }
 
     func show() {
