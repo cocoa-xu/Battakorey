@@ -95,6 +95,59 @@ jobs:
             echo "DEVELOPMENT_TEAM=$TEAM_ID"
           } >> "$GITHUB_ENV"
 
+      - name: Install Developer ID provisioning profile
+        env:
+          DEV_ID_PROVISIONING_PROFILE_BASE64: ${{ secrets.DEV_ID_PROVISIONING_PROFILE_BASE64 }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$DEV_ID_PROVISIONING_PROFILE_BASE64" ]]; then
+            echo "::error::DEV_ID_PROVISIONING_PROFILE_BASE64 repository secret is not configured."
+            exit 1
+          fi
+
+          profile_path="$RUNNER_TEMP/Battakorey.provisionprofile"
+          profile_plist="$RUNNER_TEMP/Battakorey-provisioning-profile.plist"
+          printf '%s' "$DEV_ID_PROVISIONING_PROFILE_BASE64" |
+            base64 --decode -o "$profile_path"
+          security cms -D -i "$profile_path" -o "$profile_plist"
+
+          profile_uuid=$(/usr/libexec/PlistBuddy -c "Print :UUID" "$profile_plist")
+          profile_name=$(/usr/libexec/PlistBuddy -c "Print :Name" "$profile_plist")
+          profile_team=$(/usr/libexec/PlistBuddy -c "Print :TeamIdentifier:0" "$profile_plist")
+          profile_app_id=$(
+            /usr/libexec/PlistBuddy \
+              -c "Print :Entitlements:com.apple.application-identifier" \
+              "$profile_plist"
+          )
+          provisions_all_devices=$(
+            /usr/libexec/PlistBuddy -c "Print :ProvisionsAllDevices" "$profile_plist"
+          )
+
+          if [[ "$profile_team" != "$TEAM_ID" ]]; then
+            echo "::error::The provisioning profile belongs to a different team."
+            exit 1
+          fi
+          if [[ "$profile_app_id" != "$TEAM_ID.moe.uwucocoa.battakorey" ]]; then
+            echo "::error::The provisioning profile does not match the app bundle identifier."
+            exit 1
+          fi
+          if [[ "$provisions_all_devices" != "true" ]]; then
+            echo "::error::The provisioning profile is not a Developer ID profile."
+            exit 1
+          fi
+
+          profile_directory="$HOME/Library/MobileDevice/Provisioning Profiles"
+          installed_profile="$profile_directory/$profile_uuid.provisionprofile"
+          mkdir -p "$profile_directory"
+          cp "$profile_path" "$installed_profile"
+
+          {
+            echo "PROVISIONING_PROFILE_NAME=$profile_name"
+            echo "INSTALLED_PROVISIONING_PROFILE=$installed_profile"
+          } >> "$GITHUB_ENV"
+
       - name: Generate Xcode project
         run: ./scripts/generate-project.sh
 
@@ -106,6 +159,10 @@ jobs:
           cp "${{ env.PROJECT_NAME }}/ExportOptions.plist" "$EXPORT_OPTIONS_PATH"
           /usr/libexec/PlistBuddy \
             -c "Add :teamID string $DEVELOPMENT_TEAM" \
+            "$EXPORT_OPTIONS_PATH"
+          /usr/libexec/PlistBuddy \
+            -c "Add :provisioningProfiles dict" \
+            -c "Add :provisioningProfiles:moe.uwucocoa.battakorey string $PROVISIONING_PROFILE_NAME" \
             "$EXPORT_OPTIONS_PATH"
 
           build_variant() {
@@ -125,7 +182,8 @@ jobs:
               ARCHS="$architectures" \
               CODE_SIGN_STYLE=Manual \
               CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
-              DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM"
+              DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+              PROVISIONING_PROFILE_SPECIFIER="$PROVISIONING_PROFILE_NAME"
             xcodebuild \
               -exportArchive \
               -archivePath "$archive_path" \
@@ -196,4 +254,9 @@ jobs:
         if: ${{ always() }}
         run: |
           security delete-keychain "$RUNNER_TEMP/app-signing.keychain-db" || true
+          if [[ -n "${INSTALLED_PROVISIONING_PROFILE:-}" ]]; then
+            rm -f "$INSTALLED_PROVISIONING_PROFILE"
+          fi
           rm -f "$RUNNER_TEMP/developer-id-application.p12"
+          rm -f "$RUNNER_TEMP/Battakorey.provisionprofile"
+          rm -f "$RUNNER_TEMP/Battakorey-provisioning-profile.plist"
