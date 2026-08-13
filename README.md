@@ -62,6 +62,38 @@ On desktop Macs without a built-in battery, Battakorey keeps system and input-po
 
 The additional telemetry does not require root access or disabling System Integrity Protection. The app is intentionally not sandboxed, which makes this build unsuitable for Mac App Store distribution.
 
+## Automation
+
+Battakorey can expose its current readings to local tools through MCP and a
+versioned REST API. Both interfaces are disabled by default and can be enabled
+independently under **Preferences > Automation**. Bearer token authentication is
+enabled by default, and the token is stored in Keychain. Authentication can be
+disabled explicitly when a trusted local setup does not need it.
+
+The server listens on `127.0.0.1:18761` by default. Preferences also provides a
+random private port, per-client request limits, token regeneration, and advanced
+network binding. Network access uses unencrypted HTTP and should only be enabled
+on a trusted network.
+
+MCP uses Streamable HTTP at:
+
+```text
+http://127.0.0.1:18761/mcp
+```
+
+REST resources are available below `http://127.0.0.1:18761/api/v1`:
+
+- `GET /api/v1` describes the API and currently exposed capabilities.
+- `GET /api/v1/snapshot` returns every exposed reading.
+- `GET /api/v1/capabilities` describes the exposed capability groups.
+- `GET /api/v1/readings/{capability}` returns one capability group.
+
+Every reading has a stable identifier, a machine-readable value and unit when
+available, and the same formatted value shown in Battakorey. Exposure is the
+intersection of the items enabled in the menu preferences and the capability
+groups enabled in Automation, so enabling the server never bypasses the user's
+existing visibility choices.
+
 ### References
 
 [WhatBattery](https://github.com/darrylmorley/whatbattery) was consulted as a
