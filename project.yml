@@ -2,7 +2,7 @@ name: battakorey
 
 options:
   minimumXcodeGenVersion: 2.45.4
-  xcodeVersion: "16.4"
+  xcodeVersion: "26.2"
   projectFormat: xcode16_3
   defaultConfig: Release
   deploymentTarget:
