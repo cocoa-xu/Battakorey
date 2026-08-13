@@ -5,7 +5,11 @@ final class BatteryMonitor {
     var onSnapshot: ((BatterySnapshot) -> Void)?
 
     private let provider: BatteryInfoProviding
-    private let queue = DispatchQueue(label: "moe.uwucocoa.battakorey.power", qos: .utility)
+    private let queue = DispatchQueue(
+        label: "moe.uwucocoa.battakorey.power",
+        qos: .utility,
+        autoreleaseFrequency: .workItem
+    )
     private var timer: DispatchSourceTimer?
     private var powerSourceNotification: CFRunLoopSource?
 
