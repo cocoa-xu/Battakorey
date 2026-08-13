@@ -277,6 +277,12 @@ registerBrandIcons().catch((error) => console.error(error));
 
 const navToggle = document.querySelector(".nav-toggle");
 const navMenu = document.querySelector(".nav-menu");
+const downloadMenu = document.querySelector("[data-download-menu]");
+const downloadTrigger = document.querySelector("[data-download-trigger]");
+const downloadPanel = document.querySelector("[data-download-panel]");
+const downloadItems = [
+  ...document.querySelectorAll('[data-download-panel] [role="menuitem"]'),
+];
 const siteHeader = document.querySelector(".site-header");
 const hero = document.querySelector(".hero");
 const macDesktop = document.querySelector(".mac-desktop");
@@ -339,14 +345,80 @@ downloadArchitectureButtons.forEach((button) => {
   });
 });
 
+const setDownloadMenuOpen = (open, focusFirstItem = false) => {
+  downloadMenu?.toggleAttribute("data-open", open);
+  downloadTrigger?.setAttribute("aria-expanded", String(open));
+  downloadPanel?.setAttribute("aria-hidden", String(!open));
+  downloadPanel?.toggleAttribute("inert", !open);
+  if (open && focusFirstItem) {
+    requestAnimationFrame(() => downloadItems[0]?.focus());
+  }
+};
+
+downloadTrigger?.addEventListener("click", () => {
+  setDownloadMenuOpen(!downloadMenu?.hasAttribute("data-open"));
+});
+
+downloadTrigger?.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && downloadMenu?.hasAttribute("data-open")) {
+    event.preventDefault();
+    setDownloadMenuOpen(false);
+    return;
+  }
+  if (event.key !== "ArrowDown") return;
+  event.preventDefault();
+  setDownloadMenuOpen(true, true);
+});
+
+downloadPanel?.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    setDownloadMenuOpen(false);
+    downloadTrigger?.focus();
+    return;
+  }
+  if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+
+  event.preventDefault();
+  const currentIndex = downloadItems.indexOf(document.activeElement);
+  const nextIndex =
+    event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? downloadItems.length - 1
+        : (Math.max(0, currentIndex) +
+            (event.key === "ArrowDown" ? 1 : -1) +
+            downloadItems.length) %
+          downloadItems.length;
+  downloadItems[nextIndex]?.focus();
+});
+
+downloadPanel?.addEventListener("click", () => setDownloadMenuOpen(false));
+
+downloadMenu?.addEventListener("focusout", () => {
+  queueMicrotask(() => {
+    if (!downloadMenu.contains(document.activeElement)) {
+      setDownloadMenuOpen(false);
+    }
+  });
+});
+
+document.addEventListener("pointerdown", (event) => {
+  if (!downloadMenu?.hasAttribute("data-open")) return;
+  if (downloadMenu.contains(event.target)) return;
+  setDownloadMenuOpen(false);
+});
+
 navToggle?.addEventListener("click", () => {
   const isOpen = navToggle.getAttribute("aria-expanded") === "true";
   navToggle.setAttribute("aria-expanded", String(!isOpen));
   navMenu?.classList.toggle("is-open", !isOpen);
+  if (isOpen) setDownloadMenuOpen(false);
 });
 
 navMenu?.querySelectorAll("a").forEach((link) => {
   link.addEventListener("click", () => {
+    setDownloadMenuOpen(false);
     navToggle?.setAttribute("aria-expanded", "false");
     navMenu.classList.remove("is-open");
   });
