@@ -42,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         preferencesModel.onChange = { [weak self] visibility in
             guard let self else { return }
             self.automationState.update(visibility: visibility)
+            self.automationSettings.refreshExposure()
             guard let battery = self.latestBattery else { return }
             self.menu.update(with: battery, visibility: visibility)
         }

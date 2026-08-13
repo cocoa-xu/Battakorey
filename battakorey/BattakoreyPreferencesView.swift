@@ -546,7 +546,15 @@ private struct BattakoreyAboutPane: View {
                 acknowledgementRow(
                     title: "FlowingDayUI",
                     caption: "Reusable preferences windows and macOS interface components.",
+                    logo: NSImage(named: "FlowingDayUILogo")!,
                     destination: Self.flowingDayURL
+                )
+                PreferencesRowSeparator()
+                acknowledgementRow(
+                    title: "Bondry",
+                    caption: "Secure automation runtime for MCP, REST, permissions, and audit.",
+                    logo: NSImage(named: "BondryLogo")!,
+                    destination: Self.bondryURL
                 )
             }
 
@@ -567,9 +575,10 @@ private struct BattakoreyAboutPane: View {
     private func acknowledgementRow(
         title: String,
         caption: String,
+        logo: NSImage,
         destination: URL
     ) -> some View {
-        PreferencesRow(title: title, caption: caption) {
+        PreferencesRow(icon: .image(logo), title: title, caption: caption) {
             Link(destination: destination) {
                 Text("GitHub")
             }
@@ -579,6 +588,7 @@ private struct BattakoreyAboutPane: View {
     }
 
     private static let flowingDayURL = URL(string: "https://github.com/cocoa-xu/flowing-day-ui")!
+    private static let bondryURL = URL(string: "https://github.com/bondry-dev/bondry")!
     private static let cocoaURL = URL(string: "https://github.com/cocoa-xu")!
 }
 

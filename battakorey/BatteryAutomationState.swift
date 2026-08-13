@@ -11,6 +11,8 @@ enum BatteryAutomationCapability: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    var bondryID: String { "battery.\(rawValue)" }
+
     var title: String {
         switch self {
         case .status: "Status"
@@ -39,18 +41,6 @@ enum BatteryAutomationCapability: String, CaseIterable, Identifiable {
             "Charging, thermal, health, and controller diagnostics."
         case .batteryInternals:
             "Cell, gauge history, and lifetime controller readings."
-        }
-    }
-
-    var toolName: String {
-        switch self {
-        case .status: "battery_get_status"
-        case .capacity: "battery_get_capacity"
-        case .electrical: "battery_get_electrical"
-        case .powerAdapter: "battery_get_power_adapter"
-        case .componentPower: "battery_get_component_power"
-        case .diagnostics: "battery_get_diagnostics"
-        case .batteryInternals: "battery_get_internals"
         }
     }
 
@@ -100,12 +90,9 @@ enum BatteryAutomationCapability: String, CaseIterable, Identifiable {
         }
     }
 
-    static func matching(toolName: String) -> BatteryAutomationCapability? {
-        allCases.first { $0.toolName == toolName }
-    }
 }
 
-final class BatteryAutomationState {
+final class BatteryAutomationState: @unchecked Sendable {
     private struct StoredSnapshot {
         let battery: BatterySnapshot
         let sampledAt: Date
@@ -134,15 +121,62 @@ final class BatteryAutomationState {
         allowedCapabilities: Set<BatteryAutomationCapability>
     ) -> [BatteryAutomationCapability] {
         let visibleItemIDs = lock.withLock { visibility.visibleItemIDs }
-        return BatteryAutomationCapability.allCases.filter {
-            allowedCapabilities.contains($0) && !$0.itemIDs.isDisjoint(with: visibleItemIDs)
-        }
+        return exposedCapabilities(
+            allowedCapabilities: allowedCapabilities,
+            visibleItemIDs: visibleItemIDs
+        )
     }
 
     func payload(for capability: BatteryAutomationCapability) -> [String: Any]? {
         let values = lock.withLock { (snapshot, visibility) }
         guard let snapshot = values.0 else { return nil }
-        let visibleItemIDs = values.1.visibleItemIDs.intersection(capability.itemIDs)
+        return payload(
+            for: capability,
+            snapshot: snapshot,
+            visibility: values.1
+        )
+    }
+
+    func snapshotPayload(
+        allowedCapabilities: Set<BatteryAutomationCapability>
+    ) -> [String: Any]? {
+        let values = lock.withLock { (snapshot, visibility) }
+        let capabilities = exposedCapabilities(
+            allowedCapabilities: allowedCapabilities,
+            visibleItemIDs: values.1.visibleItemIDs
+        )
+        guard !capabilities.isEmpty else {
+            return ["capabilities": []]
+        }
+        guard let snapshot = values.0 else { return nil }
+        let payloads = capabilities.map {
+            payload(for: $0, snapshot: snapshot, visibility: values.1)
+        }
+        return [
+            "sampledAt": Self.timestamp(snapshot.sampledAt),
+            "capabilities": payloads.map { payload in
+                var payload = payload
+                payload.removeValue(forKey: "sampledAt")
+                return payload
+            }
+        ]
+    }
+
+    private func exposedCapabilities(
+        allowedCapabilities: Set<BatteryAutomationCapability>,
+        visibleItemIDs: Set<BatteryMenuItemID>
+    ) -> [BatteryAutomationCapability] {
+        BatteryAutomationCapability.allCases.filter {
+            allowedCapabilities.contains($0) && !$0.itemIDs.isDisjoint(with: visibleItemIDs)
+        }
+    }
+
+    private func payload(
+        for capability: BatteryAutomationCapability,
+        snapshot: StoredSnapshot,
+        visibility: BatteryMenuVisibility
+    ) -> [String: Any] {
+        let visibleItemIDs = visibility.visibleItemIDs.intersection(capability.itemIDs)
         let filteredVisibility = BatteryMenuVisibility(
             visibleItemIDs: visibleItemIDs,
             showsSectionTitles: true
@@ -181,31 +215,9 @@ final class BatteryAutomationState {
             return reading
         }
         return [
-            "capability": capability.rawValue,
+            "capability": capability.bondryID,
             "sampledAt": Self.timestamp(snapshot.sampledAt),
             "readings": readings
-        ]
-    }
-
-    func snapshotPayload(
-        allowedCapabilities: Set<BatteryAutomationCapability>
-    ) -> [String: Any]? {
-        let capabilities = exposedCapabilities(allowedCapabilities: allowedCapabilities)
-        guard !capabilities.isEmpty else {
-            return ["capabilities": []] as [String: Any]
-        }
-        guard let first = capabilities.compactMap({ payload(for: $0) }).first,
-              let sampledAt = first["sampledAt"] else {
-            return nil
-        }
-        let payloads = capabilities.compactMap { payload(for: $0) }
-        return [
-            "sampledAt": sampledAt,
-            "capabilities": payloads.map { payload in
-                var payload = payload
-                payload.removeValue(forKey: "sampledAt")
-                return payload
-            }
         ]
     }
 

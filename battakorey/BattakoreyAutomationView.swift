@@ -9,7 +9,7 @@ struct BattakoreyAutomationPane: View {
     @State private var showsAdvanced = false
 
     var body: some View {
-        PreferencesPaneStack {
+        VStack(alignment: .leading, spacing: 0) {
             PreferencesSection(
                 "Automation Access",
                 footer: "Both interfaces are off by default. Enable only what you plan to use."
@@ -25,17 +25,21 @@ struct BattakoreyAutomationPane: View {
                 }
             }
 
-            if settings.mcpEnabled || settings.restEnabled {
-                serverSection
-                exposureSection
-            }
-
-            if settings.mcpEnabled {
-                mcpSection
-            }
-
-            if settings.restEnabled {
-                restSection
+            FlowingDisclosureContent(isExpanded: automationEnabled) {
+                VStack(alignment: .leading, spacing: 0) {
+                    serverSection
+                        .padding(.top, sectionSpacing)
+                    exposureSection
+                        .padding(.top, sectionSpacing)
+                    FlowingDisclosureContent(isExpanded: settings.mcpEnabled) {
+                        mcpSection
+                            .padding(.top, sectionSpacing)
+                    }
+                    FlowingDisclosureContent(isExpanded: settings.restEnabled) {
+                        restSection
+                            .padding(.top, sectionSpacing)
+                    }
+                }
             }
         }
         .onAppear {
@@ -51,12 +55,13 @@ struct BattakoreyAutomationPane: View {
                 caption: "Use an unprivileged port from 1024 through 65535."
             ) {
                 HStack(spacing: 7) {
-                    TextField("Port", text: $portText)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.system(.body, design: .monospaced))
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 76)
-                        .onSubmit(commitPort)
+                    FlowingTextField(
+                        "Port",
+                        text: $portText,
+                        onSubmit: commitPort
+                    )
+                    .monospacedDigit()
+                    .frame(width: 88)
                     Button(action: randomizePort) {
                         Image(systemName: "arrow.clockwise")
                     }
@@ -68,33 +73,25 @@ struct BattakoreyAutomationPane: View {
 
             PreferencesRowSeparator()
 
-            PreferencesRow(
+            PreferencesSliderRow(
                 title: "Request Limit",
-                caption: "Maximum requests per minute from each client."
-            ) {
-                HStack(spacing: 10) {
-                    Text("\(settings.requestsPerMinute) per minute")
-                        .monospacedDigit()
-                        .foregroundStyle(FlowingPalette.muted)
-                    Stepper(
-                        "Request Limit",
-                        value: $settings.requestsPerMinute,
-                        in: BatteryAutomationSettings.requestsPerMinuteRange
-                    )
-                    .labelsHidden()
-                }
-            }
+                caption: "Maximum requests per minute from each client.",
+                value: requestsPerMinute,
+                in: Double(BatteryAutomationSettings.requestsPerMinuteRange.lowerBound)
+                    ... Double(BatteryAutomationSettings.requestsPerMinuteRange.upperBound),
+                step: 1,
+                format: { "\(Int($0.rounded())) per minute" }
+            )
 
             PreferencesRowSeparator()
 
             PreferencesSwitchRow(
                 title: "Require Access Token",
-                caption: "Require the same Bearer token for every MCP and REST request.",
+                caption: "Require a Bearer token for every MCP and REST request.",
                 isOn: $settings.authenticationRequired
             )
 
-            if settings.authenticationRequired {
-                PreferencesRowSeparator()
+            PreferencesDependentRows(isVisible: settings.authenticationRequired) {
                 PreferencesRow(
                     title: "Access Token",
                     caption: "Stored in Keychain. Regenerating it disconnects existing clients."
@@ -125,67 +122,57 @@ struct BattakoreyAutomationPane: View {
 
             PreferencesRowSeparator()
 
-            PreferencesRow(title: "Advanced") {
-                Button(showsAdvanced ? "Hide" : "Show") {
-                    showsAdvanced.toggle()
-                }
-                .buttonStyle(FlowingSoftButtonStyle())
-            }
+            PreferencesExpandableRow(
+                title: "Advanced",
+                isExpanded: $showsAdvanced
+            )
 
-            if showsAdvanced {
-                PreferencesRowSeparator()
-                PreferencesRow(
+            PreferencesDependentRows(isVisible: showsAdvanced) {
+                PreferencesSegmentedRow(
                     title: "Listen On",
-                    caption: "This Mac Only is the safest choice."
-                ) {
-                    Picker("Listen On", selection: $settings.networkScope) {
-                        ForEach(AutomationNetworkScope.allCases) { scope in
-                            Text(scope.label).tag(scope)
-                        }
+                    caption: "This Mac Only is the safest choice.",
+                    controlWidth: 320,
+                    selection: $settings.networkScope,
+                    options: AutomationNetworkScope.allCases.map {
+                        FlowingSegmentOption($0, label: $0.label)
                     }
-                    .labelsHidden()
-                    .frame(width: 180)
-                }
+                )
 
                 PreferencesRowSeparator()
 
                 PreferencesValueRow(title: "Bind Address", value: settings.bindAddress)
 
-                if settings.networkScope == .selectedInterface {
-                    PreferencesRowSeparator()
-                    PreferencesRow(title: "Network Interface") {
-                        if settings.networkInterfaces.isEmpty {
-                            Text("No active network interfaces")
-                                .foregroundStyle(FlowingPalette.muted)
-                        } else {
-                            Picker("Network Interface", selection: $settings.interfaceAddress) {
-                                ForEach(settings.networkInterfaces) { interface in
-                                    Text(interface.label).tag(interface.address)
-                                }
+                PreferencesDependentRows(
+                    isVisible: settings.networkScope == .selectedInterface
+                ) {
+                    if settings.networkInterfaces.isEmpty {
+                        PreferencesEmptyRow("No active network interfaces.")
+                    } else {
+                        PreferencesPopupRow(
+                            title: "Network Interface",
+                            minimumControlWidth: 220,
+                            selection: $settings.interfaceAddress,
+                            options: settings.networkInterfaces.map {
+                                FlowingSelectOption($0.address, label: $0.label)
                             }
-                            .labelsHidden()
-                            .frame(width: 220)
-                        }
+                        )
                     }
                 }
 
-                if settings.networkScope.exposesToNetwork {
-                    PreferencesRowSeparator()
-                    PreferencesRow(
-                        title: "Network Warning",
-                        caption: networkWarning
-                    ) {
-                        Image(systemName: "exclamationmark.shield")
-                            .foregroundStyle(.orange)
-                    }
+                PreferencesDependentRows(isVisible: settings.networkScope.exposesToNetwork) {
+                    PreferencesEmptyRow(
+                        networkWarning,
+                        symbol: "exclamationmark.shield"
+                    )
                 }
             }
 
-            if let problem = settings.serverProblem ?? settings.securityProblem {
-                PreferencesRowSeparator()
-                PreferencesRow(title: "Problem", caption: problem) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .foregroundStyle(.orange)
+            PreferencesDependentRows(isVisible: problem != nil) {
+                if let problem {
+                    PreferencesEmptyRow(
+                        problem,
+                        symbol: "exclamationmark.triangle"
+                    )
                 }
             }
         }
@@ -240,7 +227,7 @@ struct BattakoreyAutomationPane: View {
                 AutomationCopyButton(text: settings.restEndpoint)
             }
             PreferencesRowSeparator()
-            PreferencesValueRow(title: "Example", value: "Query the exposed snapshot") {
+            PreferencesValueRow(title: "Example", value: "Invoke the snapshot capability") {
                 AutomationCopyButton(text: settings.restExampleCommand)
             }
         }
@@ -251,6 +238,25 @@ struct BattakoreyAutomationPane: View {
             ? "Keep the access token private."
             : "Access token authentication is disabled."
         return "Network access uses unencrypted HTTP. Use only a trusted network. \(authentication)"
+    }
+
+    private var automationEnabled: Bool {
+        settings.mcpEnabled || settings.restEnabled
+    }
+
+    private var problem: String? {
+        settings.serverProblem ?? settings.securityProblem
+    }
+
+    private var requestsPerMinute: Binding<Double> {
+        Binding(
+            get: { Double(settings.requestsPerMinute) },
+            set: { settings.requestsPerMinute = Int($0.rounded()) }
+        )
+    }
+
+    private var sectionSpacing: CGFloat {
+        PreferencesMetrics.standard.sectionSpacing
     }
 
     private func commitPort() {

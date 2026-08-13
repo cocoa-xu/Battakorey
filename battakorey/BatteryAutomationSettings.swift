@@ -73,13 +73,13 @@ final class BatteryAutomationSettings: ObservableObject {
                 return
             }
             store(requestsPerMinute, for: "requestsPerMinute")
-            applyAccessPolicy()
+            scheduleServerConfiguration()
         }
     }
     @Published var enabledCapabilities: Set<BatteryAutomationCapability> {
         didSet {
             store(enabledCapabilities.map(\.rawValue).sorted(), for: "enabledCapabilities")
-            applyAccessPolicy()
+            applyServerConfiguration()
         }
     }
     @Published private(set) var networkInterfaces: [AutomationNetworkInterface]
@@ -90,18 +90,16 @@ final class BatteryAutomationSettings: ObservableObject {
 
     private let preferences: AutomationPreferencesStoring
     private let namespace: String
-    private let tokenStore: AutomationTokenStoring
-    private weak var server: BatteryAutomationServer?
+    private weak var server: (any BatteryAutomationServing)?
+    private var pendingServerConfiguration: Task<Void, Never>?
 
     init(
         preferences: AutomationPreferencesStoring = UserDefaults.standard,
         namespace: String = "BattakoreyAutomation.",
-        tokenStore: AutomationTokenStoring = KeychainAutomationTokenStore(),
         networkInterfaces: [AutomationNetworkInterface] = AutomationNetworkInterface.current
     ) {
         self.preferences = preferences
         self.namespace = namespace
-        self.tokenStore = tokenStore
         self.networkInterfaces = networkInterfaces
         let storedScope = Self.string(
             in: preferences,
@@ -183,17 +181,20 @@ final class BatteryAutomationSettings: ObservableObject {
         let authorization = authenticationRequired
             ? " -H \"Authorization: Bearer \(accessToken)\""
             : ""
-        return "curl\(authorization) \(restEndpoint)/snapshot"
+        return "curl -X POST\(authorization) \(restEndpoint)/capabilities/battery.snapshot"
     }
 
-    func attach(server: BatteryAutomationServer) {
+    func attach(server: any BatteryAutomationServing) {
         self.server = server
         applyServerConfiguration()
     }
 
     func stop() {
+        pendingServerConfiguration?.cancel()
+        pendingServerConfiguration = nil
         server?.stop()
         isServerRunning = false
+        accessToken = ""
     }
 
     func randomizePort() {
@@ -207,10 +208,9 @@ final class BatteryAutomationSettings: ObservableObject {
     }
 
     func regenerateAccessToken() {
+        guard let server else { return }
         do {
-            let token = try AutomationToken.generate()
-            try tokenStore.saveToken(token)
-            accessToken = token
+            accessToken = try server.regenerateAccessToken()
             securityProblem = nil
             applyServerConfiguration()
         } catch {
@@ -234,64 +234,60 @@ final class BatteryAutomationSettings: ObservableObject {
         }
     }
 
+    func refreshExposure() {
+        applyServerConfiguration()
+    }
+
     private func applyServerConfiguration() {
-        server?.stop()
+        pendingServerConfiguration?.cancel()
+        pendingServerConfiguration = nil
         isServerRunning = false
         serverProblem = nil
-        guard mcpEnabled || restEnabled else { return }
-        if authenticationRequired {
-            loadAccessTokenIfNeeded()
-            guard !accessToken.isEmpty else { return }
-        }
         guard let server else { return }
+        guard mcpEnabled || restEnabled else {
+            server.stop()
+            accessToken = ""
+            return
+        }
         do {
             try server.start(configuration: BatteryAutomationServer.Configuration(
                 address: bindAddress,
                 port: UInt16(clamping: port),
-                token: accessToken,
                 authenticationRequired: authenticationRequired,
                 mcpEnabled: mcpEnabled,
                 restEnabled: restEnabled,
                 enabledCapabilities: enabledCapabilities,
                 requestsPerMinute: requestsPerMinute
             ))
+            if authenticationRequired {
+                accessToken = try server.accessToken()
+                securityProblem = nil
+            } else {
+                accessToken = ""
+                securityProblem = nil
+            }
             isServerRunning = server.isRunning
         } catch {
+            server.stop()
+            accessToken = ""
             serverProblem = error.localizedDescription
         }
     }
 
-    private func applyAccessPolicy() {
-        server?.updateAccessPolicy(
-            enabledCapabilities: enabledCapabilities,
-            requestsPerMinute: requestsPerMinute
-        )
-    }
-
-    private func loadAccessTokenIfNeeded() {
-        guard accessToken.isEmpty else { return }
-        let credential = Self.credential(from: tokenStore)
-        accessToken = credential.token
-        securityProblem = credential.problem
+    private func scheduleServerConfiguration() {
+        pendingServerConfiguration?.cancel()
+        pendingServerConfiguration = Task { [weak self] in
+            do {
+                try await Task.sleep(for: .milliseconds(250))
+            } catch {
+                return
+            }
+            self?.applyServerConfiguration()
+        }
     }
 
     private func store(_ value: Any, for key: String) {
         preferences.set(value, forKey: namespace + key)
-    }
-
-    private static func credential(
-        from store: AutomationTokenStoring
-    ) -> (token: String, problem: String?) {
-        do {
-            if let token = try store.loadToken(), !token.isEmpty {
-                return (token, nil)
-            }
-            let token = try AutomationToken.generate()
-            try store.saveToken(token)
-            return (token, nil)
-        } catch {
-            return ((try? AutomationToken.generate()) ?? UUID().uuidString, error.localizedDescription)
-        }
     }
 
     private static func boolean(

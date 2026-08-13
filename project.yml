@@ -9,9 +9,12 @@ options:
     macOS: "13.0"
 
 packages:
+  Bondry:
+    url: https://github.com/bondry-dev/bondry
+    exactVersion: 0.1.1
   FlowingDayUI:
     url: https://github.com/cocoa-xu/flowing-day-ui
-    exactVersion: 2.1.1
+    exactVersion: 2.4.0
 
 settings:
   base:
@@ -25,6 +28,7 @@ targets:
     sources:
       - path: battakorey
         excludes:
+          - Battakorey.entitlements
           - ExportOptions.plist
           - Info.plist
     info:
@@ -42,14 +46,24 @@ targets:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_ENTITLEMENTS: battakorey/Battakorey.entitlements
         CODE_SIGN_IDENTITY: "${CODE_SIGN_IDENTITY}"
         CODE_SIGN_STYLE: Manual
-        CURRENT_PROJECT_VERSION: 47
+        CURRENT_PROJECT_VERSION: 48
         ENABLE_APP_SANDBOX: NO
         ENABLE_HARDENED_RUNTIME: YES
-        MARKETING_VERSION: 2.3.1
+        MARKETING_VERSION: 2.4.0
         PRODUCT_BUNDLE_IDENTIFIER: moe.uwucocoa.battakorey
+      configs:
+        Release:
+          DEAD_CODE_STRIPPING: YES
     dependencies:
+      - package: Bondry
+        product: Bondry
+      - package: Bondry
+        product: BondryApple
+      - package: Bondry
+        product: BondryLocalServer
       - package: FlowingDayUI
         product: FlowingDayControls
       - package: FlowingDayUI
@@ -64,6 +78,7 @@ targets:
       base:
         CODE_SIGN_IDENTITY: "${CODE_SIGN_IDENTITY}"
         CODE_SIGN_STYLE: Manual
+        GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: moe.uwucocoa.battakoreyTests
     dependencies:
       - target: battakorey

@@ -1,88 +1,73 @@
 import Foundation
 import Security
 
-protocol AutomationTokenStoring {
-    func loadToken() throws -> String?
-    func saveToken(_ token: String) throws
+struct AutomationCredential: Codable, Equatable {
+    let clientID: String
+    let secret: String
 }
 
-struct KeychainAutomationTokenStore: AutomationTokenStoring {
-    private let service = "moe.uwucocoa.battakorey.automation"
-    private let account = "bearer-token"
+protocol AutomationCredentialStoring {
+    func loadCredential() throws -> AutomationCredential?
+    func saveCredential(_ credential: AutomationCredential) throws
+}
 
-    func loadToken() throws -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
+struct KeychainAutomationCredentialStore: AutomationCredentialStoring {
+    private let service = "moe.uwucocoa.battakorey.automation"
+    private let account = "primary-client"
+
+    func loadCredential() throws -> AutomationCredential? {
+        var query = locator
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+
         var result: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
         if status == errSecItemNotFound { return nil }
         guard status == errSecSuccess else {
             throw AutomationSecurityError.keychain(status)
         }
-        guard let data = result as? Data,
-              let token = String(data: data, encoding: .utf8),
-              !token.isEmpty else {
-            throw AutomationSecurityError.invalidStoredToken
-        }
-        return token
+        guard let data = result as? Data else { return nil }
+        return try? JSONDecoder().decode(AutomationCredential.self, from: data)
     }
 
-    func saveToken(_ token: String) throws {
-        let lookup: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account
-        ]
+    func saveCredential(_ credential: AutomationCredential) throws {
+        let data = try JSONEncoder().encode(credential)
         let attributes: [String: Any] = [
-            kSecValueData as String: Data(token.utf8),
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
-        let status = SecItemUpdate(lookup as CFDictionary, attributes as CFDictionary)
+        let status = SecItemUpdate(locator as CFDictionary, attributes as CFDictionary)
         if status == errSecSuccess { return }
         guard status == errSecItemNotFound else {
             throw AutomationSecurityError.keychain(status)
         }
-        var item = lookup
+
+        var item = locator
         attributes.forEach { item[$0.key] = $0.value }
         let addStatus = SecItemAdd(item as CFDictionary, nil)
         guard addStatus == errSecSuccess else {
             throw AutomationSecurityError.keychain(addStatus)
         }
     }
-}
 
-enum AutomationSecurityError: LocalizedError {
-    case randomGeneration(OSStatus)
-    case keychain(OSStatus)
-    case invalidStoredToken
-
-    var errorDescription: String? {
-        switch self {
-        case let .randomGeneration(status):
-            "Could not generate an access token (\(status))."
-        case let .keychain(status):
-            "Could not access the automation token in Keychain (\(status))."
-        case .invalidStoredToken:
-            "The automation token in Keychain is invalid."
-        }
+    private var locator: [String: Any] {
+        [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecAttrSynchronizable as String: false,
+            kSecUseDataProtectionKeychain as String: true
+        ]
     }
 }
 
-enum AutomationToken {
-    static func generate() throws -> String {
-        var bytes = [UInt8](repeating: 0, count: 32)
-        let status = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
-        guard status == errSecSuccess else {
-            throw AutomationSecurityError.randomGeneration(status)
+enum AutomationSecurityError: LocalizedError {
+    case keychain(OSStatus)
+
+    var errorDescription: String? {
+        switch self {
+        case let .keychain(status):
+            "Could not access the automation credential in Keychain (\(status))."
         }
-        return Data(bytes).base64EncodedString()
-            .replacingOccurrences(of: "+", with: "-")
-            .replacingOccurrences(of: "/", with: "_")
-            .replacingOccurrences(of: "=", with: "")
     }
 }
